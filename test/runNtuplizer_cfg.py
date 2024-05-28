@@ -26,17 +26,17 @@ nEvents = 1000
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(nEvents) )
 
 # Read events
-listOfFiles = ['/store/data/Run2022D/NoBPTX/MINIAOD/PromptReco-v1/000/357/503/00000/ef047f11-b46d-4ae6-88c5-3f5ca19591be.root']
+listOfFiles = ['file:/eos/cms/store/data/Run2024D/ScoutingPFRun3/HLTSCOUT/v1/000/380/945/00000/416c2734-64ac-4c85-a911-a6e6af7af0ec.root']
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring( listOfFiles ),
     secondaryFileNames = cms.untracked.vstring(),
     skipEvents = cms.untracked.uint32(0)
   )
-process.GlobalTag = GlobalTag(process.GlobalTag, '124X_mcRun3_2022_realistic_v5')
+process.GlobalTag = GlobalTag(process.GlobalTag, '140X_dataRun3_Prompt_v2')
 
 ## Define the process to run 
 ## 
-process.load("Analysis.standard-Ntuplizer.ntuples_cfi")
+process.load("Analysis.MuonDST-Framework.ntuples_cfi")
 
 process.p = cms.EndPath(process.ntuples)
 

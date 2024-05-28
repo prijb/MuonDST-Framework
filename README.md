@@ -29,7 +29,18 @@ In MC (only tried here so far) e.g.:
 hltGetConfiguration /users/elfontan/2024Scouting/CMSSW_14_0_0_GRun_V107/HLT/V5 --globaltag auto:phase1_2024_realistic --mc --unprescale --output minimal --max-events 100 --input /store/mc/Run3Winter24Digi/JPsiToMuMu_PT-0to100_pythia8-gun/GEN-SIM-RAW/KeepSi_133X_mcRun3_2024_realistic_v8-v2/2540000/005264ab-2a76-4f83-ac29-8e27a73cdc7c.root --eras Run3 --l1-emulator uGT --l1 L1Menu_Collisions2024_v1_1_0_xml > hltMC_JPsi.py
 ```
 
-To study the scouting muon in the samples, some lines should be added to specify those to be kept in the output:
+To study the scouting muon in the samples, some lines should be added to specify those to be kept in the output.
 
 
+## How to run in crab a given work (reHLT or not)
+
+Should be done with the ```launch_crab.py``` script:
+```
+python3 scripts/launch_crab.py [path to cfg] [dataset] [reference name]
+```
+
+An example:
+```
+python3 scripts/launch_crab.py python/reHLT/hltMC_GRun_V107_ROIplusDR_noDQM.py /JPsiToMuMu_PT-0to100_pythia8-gun/Run3Winter24Digi-KeepSi_133X_mcRun3_2024_realistic_v8-v2/GEN-SIM-RAW JPsiROI-prod
+```
 
