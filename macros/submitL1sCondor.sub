@@ -1,0 +1,16 @@
+universe        = vanilla
+executable      = submitL1sCondor.sh
+output          = logs/job.$(ClusterId).$(ProcId).out
+error           = logs/job.$(ClusterId).$(ProcId).err
+log             = logs/job.$(ClusterId).$(ProcId).log
+
+#RequestCpus   = 2
+#RequestMemory = 8000
+
++JobFlavour = 'espresso'
+queue arguments from (
+# -v VARIABLE -b BINS -m XMIN -M XMAX -x XLOG?
+-v SelSVNoVtx_mass -b 1000 -m -1 -M 2.6 -x 1
+-v MuonNoVtx_pt -b 500 -m 0.0 -M 100.0 -x 0
+-v MuonNoVtx_eta -b 100 -m -2.4 -M 2.4 -x 0
+)

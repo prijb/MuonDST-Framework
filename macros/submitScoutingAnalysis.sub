@@ -1,0 +1,12 @@
+universe        = vanilla
+executable      = submitScoutingAnalysis.sh
+output          = logs/job.$(ClusterId).$(ProcId).out
+error           = logs/job.$(ClusterId).$(ProcId).err
+log             = logs/job.$(ClusterId).$(ProcId).log
+arguments       = --tag $ENV(TAG) --l1 $ENV(L1SEED) --inDir $ENV(INDIR) -s $(ProcId) -n $ENV(SIZE)
++JobFlavour = "workday"
+
+#RequestCpus   = 2
+#RequestMemory = 8000
+
+queue $ENV(STEPS)
