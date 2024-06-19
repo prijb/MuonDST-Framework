@@ -53,12 +53,38 @@ def plotSimpleEfficiency(eff, output, option = 'AP', extralabel = ''):
 
 
 ### Function to plot several histograms
-def plotSimple(histos, output, option = 'HIST', ylog = False, rebin = False, maxDigits = False, extralabel = '', labels = []):
+def plotSimple(name, histos_, output, option = 'HIST', ylog = False, xlog = False, rebin = False, maxDigits = False, extralabel = '', labels = [], fromRDF = False):
 
     colors = [r.kCyan-2, r.kOrange+1, r.kGray+2]
+    colors = [r.kBlack,
+             r.TColor.GetColor('#448aff'),
+             r.TColor.GetColor('#1565c0'),
+             r.TColor.GetColor('#009688'),
+             r.TColor.GetColor('#8bc34a'),
+             r.TColor.GetColor('#ffc107'),
+             r.TColor.GetColor('#ff9800'),
+             r.TColor.GetColor('#f44336'),
+             r.TColor.GetColor('#ad1457'),
+             r.TColor.GetColor('#9d4edd')]
+
+    colors = [r.kBlack,
+             r.TColor.GetColor('#ff7073'),
+             r.TColor.GetColor('#ea9e8d'),
+             r.TColor.GetColor('#dbb3b1'),
+             r.TColor.GetColor('#ffe085'),
+             r.TColor.GetColor('#fed35d'),
+             r.TColor.GetColor('#96e6b3'),
+             r.TColor.GetColor('#73d3c9'),
+             r.TColor.GetColor('#8cd9f8'),
+             r.TColor.GetColor('#a0b7cf')]
 
     # Make the plot bonito
-    for h,histo in enumerate(histos):
+    histos = []
+    for h,histo_ in enumerate(histos_):
+        if fromRDF:
+            histo = copy.deepcopy(histo_.DrawCopy())
+        else:
+            histo = copy.deepcopy(histo_)
         histo.Sumw2()
         histo.GetXaxis().SetTitleSize(0.045)
         histo.GetYaxis().SetTitleSize(0.045)
@@ -68,28 +94,31 @@ def plotSimple(histos, output, option = 'HIST', ylog = False, rebin = False, max
 
         histo.SetLineColor(colors[h])
         histo.SetLineWidth(2)
+        histos.append(histo)
 
     c1 = r.TCanvas("c1", "", 700, 600)
     c1.cd()
 
     if ylog:
-        histos[0].SetMaximum(100*histos[0].GetMaximum())
-        histos[0].SetMinimum(0.1)
+        histos[0].SetMaximum(1000*histos[0].GetMaximum())
+        histos[0].SetMinimum(10)
         c1.SetLogy(1)
     else:
         histos[0].SetMaximum(1.4*histos[0].GetMaximum())
         histos[0].SetMinimum(0.0)
+    if xlog:
+        c1.SetLogx(1)
 
     for h,histo in enumerate(histos):
         if not h:
             histo.Draw(option)
         else:
-            histo.Draw(option+',SAME')
+            histo.Draw(option+', SAME')
 
-    legend = r.TLegend(0.4, 0.76, 0.8, 0.87)
+    legend = r.TLegend(0.15, 0.64, 0.8, 0.87)
     legend.SetFillStyle(0)
     legend.SetTextFont(42)
-    legend.SetTextSize(0.04)
+    legend.SetTextSize(0.025)
     legend.SetLineWidth(0)
     legend.SetBorderSize(0)
     for h,histo in enumerate(histos):
@@ -117,9 +146,9 @@ def plotSimple(histos, output, option = 'HIST', ylog = False, rebin = False, max
     latexb.SetTextAlign(11);
     latexb.SetTextSize(0.042);
     if maxDigits:
-        latexb.DrawLatex(0.33, 0.93, "#it{Internal}")
+        latexb.DrawLatex(0.33, 0.93, "#it{Preliminary}")
     else:
-        latexb.DrawLatex(0.23, 0.93, "#it{Internal}")
+        latexb.DrawLatex(0.23, 0.93, "#it{Preliminary}")
 
     latexe = TLatex()
     latexe.SetNDC();
@@ -131,7 +160,7 @@ def plotSimple(histos, output, option = 'HIST', ylog = False, rebin = False, max
     latexe.DrawLatex(0.9, 0.93, extralabel)
 
     if output[-1] != '/': output = output + '/'
-    c1.SaveAs(output + histo.GetName()+'.png')
+    c1.SaveAs(output + name +'.png')
 
 
 def plotComparison(name, tree_new, tree_ref, var, cut, nbin, xmin, xmax, label = ''):
