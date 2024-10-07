@@ -10,7 +10,9 @@ requestName = sys.argv[3]
 era = sys.argv[4]
 
 if '2024' in era:
-    lumiMask = 'Collisions24_13p6TeV_378981_385153_DCSOnly_TkPx.json'
+    lumiMask = 'Collisions24_13p6TeV_378981_381309_DCSOnly_TkPx.json' 
+    lumiMask = 'Collisions24_13p6TeV_378981_381594_DCSOnly_TkPx.json' 
+    lumiMask = 'Collisions24_13p6TeV_378981_383949_DCSOnly_TkPx.json' 
 elif '2023D' in era:
     lumiMask = 'Cert_Collisions2023_eraD_369803_370790_Golden.json' 
 
@@ -30,20 +32,23 @@ config.General.instance = 'prod'
 config.JobType.pluginName = 'Analysis'
 config.JobType.psetName = pset
 config.JobType.maxMemoryMB = 2500 # May need to be decreased
-config.JobType.maxJobRuntimeMin = 3000 # May need to be decreased
+#config.JobType.maxJobRuntimeMin = 3000 # May need to be decreased
 config.JobType.outputFiles = ['output.root']
 # Data
 config.Data.inputDataset = dataset
 config.Data.inputDBS = 'global'
 config.Data.splitting = 'FileBased'
-config.Data.unitsPerJob = 8
+config.Data.totalUnits = 10000
+config.Data.unitsPerJob = 1
 config.Data.publication = False # Unless specified
 config.Data.outLFNDirBase = '/store/user/fernance/DST-Muons/'+requestName
 config.Data.outputDatasetTag = requestName
 config.Data.lumiMask = lumiMask
+#config.Data.partialDataset = True
 #config.Data.partialDataset = True # Unless necessary...
 # Site
 config.Site.storageSite = "T2_US_UCSD"
+config.Site.whitelist = ['T0_CH_CERN_Disk', 'T2_FR_GRIF']
 
 # Launch
 print(config)

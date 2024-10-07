@@ -1,0 +1,38 @@
+universe        = vanilla
+executable      = runNanoScoutingMonitoringAnalysis.sh
+output          = nanologs_$ENV(TAG)/job.$(ClusterId).$(ProcId).out
+error           = nanologs_$ENV(TAG)/job.$(ClusterId).$(ProcId).err
+log             = nanologs_$ENV(TAG)/job.$(ClusterId).$(ProcId).log
++JobFlavour = "workday"
+
+#RequestCpus   = 2
+#RequestMemory = 8000
+getenv = True
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+transfer_input_files = $ENV(X509_USER_PROXY)
+x509userproxy=$ENV(X509_USER_PROXY)
+use_x509userproxy = True
+
+queue arguments from (
+--tag $ENV(TAG) --inDir $ENV(INDIR) -s 0 -n 50 --hlt $ENV(HLT)
+--tag $ENV(TAG) --inDir $ENV(INDIR) -s 1 -n 50 --hlt $ENV(HLT)
+--tag $ENV(TAG) --inDir $ENV(INDIR) -s 2 -n 50 --hlt $ENV(HLT)
+--tag $ENV(TAG) --inDir $ENV(INDIR) -s 3 -n 50 --hlt $ENV(HLT)
+--tag $ENV(TAG) --inDir $ENV(INDIR) -s 4 -n 50 --hlt $ENV(HLT)
+--tag $ENV(TAG) --inDir $ENV(INDIR) -s 5 -n 50 --hlt $ENV(HLT)
+--tag $ENV(TAG) --inDir $ENV(INDIR) -s 6 -n 50 --hlt $ENV(HLT)
+--tag $ENV(TAG) --inDir $ENV(INDIR) -s 7 -n 50 --hlt $ENV(HLT)
+--tag $ENV(TAG) --inDir $ENV(INDIR) -s 8 -n 50 --hlt $ENV(HLT)
+--tag $ENV(TAG) --inDir $ENV(INDIR) -s 9 -n 50 --hlt $ENV(HLT)
+--tag $ENV(TAG) --inDir $ENV(INDIR) -s 10 -n 50 --hlt $ENV(HLT)
+--tag $ENV(TAG) --inDir $ENV(INDIR) -s 11 -n 50 --hlt $ENV(HLT)
+--tag $ENV(TAG) --inDir $ENV(INDIR) -s 12 -n 50 --hlt $ENV(HLT)
+--tag $ENV(TAG) --inDir $ENV(INDIR) -s 13 -n 50 --hlt $ENV(HLT)
+--tag $ENV(TAG) --inDir $ENV(INDIR) -s 14 -n 50 --hlt $ENV(HLT)
+--tag $ENV(TAG) --inDir $ENV(INDIR) -s 15 -n 50 --hlt $ENV(HLT)
+--tag $ENV(TAG) --inDir $ENV(INDIR) -s 16 -n 50 --hlt $ENV(HLT)
+--tag $ENV(TAG) --inDir $ENV(INDIR) -s 17 -n 50 --hlt $ENV(HLT)
+--tag $ENV(TAG) --inDir $ENV(INDIR) -s 18 -n 50 --hlt $ENV(HLT)
+--tag $ENV(TAG) --inDir $ENV(INDIR) -s 19 -n 50 --hlt $ENV(HLT)
+)
