@@ -35,23 +35,25 @@ def getValues(histo):
     bins.append(histo.GetBinLowEdge(n) + histo.GetBinWidth(n))
     return np.array(values), np.array(bins)
 
-def fit_histogram_roofit(histogram, fit_range=(2.6, 3.6)):
+def fit_histogram_roofit(name, histogram, fit_range=(2.6, 3.6)):
     # Define observable: mass
     mass = RooRealVar("mass", "J/#psi Mass [GeV]", fit_range[0], fit_range[1])
 
     # Double Crystal Ball parameters
     mean = RooRealVar("mean", "mean of crystal ball", 3.1, 2.9, 3.2)
-    sigma = RooRealVar("sigma", "width of crystal ball", 0.1, 0.0005, 0.2)
-    alpha = RooRealVar("alpha", "low side alpha", 10, -10, 50.0)
-    n = RooRealVar("n", "low side n", 5.0, -5, 5.0)
+    sigma = RooRealVar("sigma", "width of crystal ball", 0.1, 0.01, 0.07)
+    alphaL = RooRealVar("alpha", "low side alpha", 1.0, 0.1, 10.0)
+    nL = RooRealVar("n", "low side n", 2.0, 1.0, 5.0)
+    alphaR = RooRealVar("alpha", "low side alpha", 1.0, 0.1, 10.0)
+    nR = RooRealVar("n", "low side n", 2.0, 1.0, 5.0)
 
     # Double Crystal Ball components
-    cb = RooCBShape("cb", "cb", mass, mean, sigma, alpha, n)
+    cb = RooCBShape("cb", "cb", mass, mean, sigma, alphaL, nL)
 
     # Gaussian parameters
     gaus_mean = RooRealVar("gaus_mean", "mean of Gaussian", 3.1, 2.9, 3.2)
     gaus_sigma = RooRealVar("gaus_sigma", "width of Gaussian", 0.05, 0.001, 0.1)
-    gauss = RooGaussian("gauss", "gauss", mass, gaus_mean, gaus_sigma)
+    gauss = RooGaussian("gauss", "gauss", mass, mean, gaus_sigma)
 
     # Background exponential
     #expo_slope  = RooRealVar("expo_slope","expo_slope",-0.02,-20.0,20.0);
@@ -70,6 +72,9 @@ def fit_histogram_roofit(histogram, fit_range=(2.6, 3.6)):
 
     # Fit the model to the data
     fit_result = model.fitTo(data_hist, RooFit.Save(), RooFit.Range(fit_range[0], fit_range[1]))
+
+    # Combined sigma
+    csigma = (gaus_sigma.getVal()*frac_gauss.getVal() + sigma.getVal()*frac_cb.getVal())/(frac_cb.getVal() + frac_gauss.getVal())
 
     # Create a frame to plot the fit result
     frame = mass.frame(RooFit.Title("J/psi Mass Fit"))
@@ -152,20 +157,49 @@ def fit_histogram_roofit(histogram, fit_range=(2.6, 3.6)):
     ax.set_xlabel(r'Dimuon mass (GeV)', fontsize=24)
     ax.set_xlim(2.6,3.6)
     hep.cms.label("Preliminary", data=True, lumi=1, year=2024, com='13.6')
+    ax.set_ylim(0.0,1.2*max(histo))
     ax.errorbar(bins[:-1], histo, yerr=y_err, fmt='o', capsize=5, label='Data', color='k', markersize=8)
     ax.plot(xval, vbkg, label='Background', color='firebrick', lw = 3)
     ax.plot(xval, vgaus, label='Gaussian', color='deepskyblue', lw = 3)
     ax.plot(xval, vcb, label='Crystal Ball', color='violet', lw = 3)
     ax.plot(xval, vmodel, label='Signal + Background', color='slateblue', lw = 3)
+    if 'L1' in name:
+        ax.text(0.45, 0.95, 'L1' + name.split('L1')[1], fontsize=15, color='black', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes)
+    ax.text(0.65, 0.8, 'Fit parameters:', fontsize=18, color='black', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes)
+    ax.text(0.65, 0.76, r'Mean = %.3f GeV'%(mean.getVal()), fontsize=18, color='black', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes)
+    ax.text(0.65, 0.72, r'$\sigma_{gauss} =$ %.3f GeV'%(gaus_sigma.getVal()), fontsize=18, color='black', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes)
+    ax.text(0.65, 0.68, r'$\sigma_{cb} = $ %.3f GeV'%(sigma.getVal()), fontsize=18, color='black', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes)
+    ax.text(0.65, 0.64, r'$\sigma_{comb} = $ %.3f%%'%(csigma/mean.getVal()*100.), fontsize=18, color='black', horizontalalignment='left', verticalalignment='top', transform=ax.transAxes)
     ax.legend(loc='upper left', fontsize = 18, frameon = True, ncol=1)
-    fig.savefig('fit.png', dpi=140)  
+    fig.savefig('%s_fit.png'%(name), dpi=140)  
 
     return fit_result, model
 
 # List of ROOT files
-f_24I = ROOT.TFile.Open("/eos/user/f/fernance/DST-Muons/ScoutingOutput_tag_Total/output_tag_Total_0.root")
-f_24I.ls()
-h_24I = f_24I.Get("DiScoutingMuonNoVtx_mass_jpsi")
+file = ROOT.TFile.Open("/eos/user/f/fernance/DST-Muons/ScoutingOutput_nanoCentra1000_Total/output_nanoCentra1000_Total_all.root")
+file.ls()
+#h_24I = f_24I.Get("DiScoutingMuonNoVtx_mass_jpsi")
+names = []
+names.append("DiScoutingMuonNoVtx_mass_jpsiAll")
+names.append("DiScoutingMuonNoVtx_mass_jpsiL1_DoubleMu_15_7")
+names.append("DiScoutingMuonNoVtx_mass_jpsiL1_DoubleMu4p5er2p0_SQ_OS_Mass_X")
+names.append("DiScoutingMuonNoVtx_mass_jpsiL1_DoubleMu8_SQ")
+names.append("DiScoutingMuonNoVtx_mass_jpsiL1_DoubleMuX_SQ_OS_dR_MaxY")
+names.append("DiScoutingMuonNoVtx_mass_jpsiL1_DoubleMu0_UptX")
 
 # Fit the histogram for 2024F
-fit_result_24F, model_24F = fit_histogram_roofit(h_24I)
+for name in names:
+    histo = file.Get(name)
+    print(type(histo))
+    fit_result, model = fit_histogram_roofit(name, histo)
+
+file = ROOT.TFile.Open("/eos/user/f/fernance/DST-Muons/ScoutingOutput_nanoCentral1000Single_Total/output_nanoCentral1000Single_Total_all.root")
+names = []
+names.append("DiScoutingMuonVtx_mass_jpsiAll")
+for name in names:
+    histo = file.Get(name)
+    print(type(histo))
+    fit_result, model = fit_histogram_roofit(name, histo)
+
+
+
