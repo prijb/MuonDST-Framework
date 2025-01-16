@@ -6,6 +6,7 @@ import __main__
 import mplhep as hep
 import matplotlib.pyplot as plt
 import time
+from include.helper import helper
 
 PWD = ''
 for _p,path in enumerate(os.path.abspath(__main__.__file__).split('/')):
@@ -80,7 +81,8 @@ if __name__ == "__main__":
     tag = opts.tag
     hlt = opts.hlt
     muon = opts.muon
-    redirector = True
+    redirector = 'root://cmsxrootd.fnal.gov' # root://cmsxrootd.fnal.gov | root://hip-cms-se.csc.fi
+    central = True
     
     ## Load samples
     #inputdir = '/eos/user/f/fernance/DST-Muons/2024E_dimuon/ScoutingPFRun3/2024E_dimuon/240610_213819' # 2024D
@@ -88,17 +90,8 @@ if __name__ == "__main__":
     nfiles = 0
     files = []
     if redirector:
-        tlab = int(time.time())
-        os.system(f'xrdfs root://hip-cms-se.csc.fi ls {inputdir} > temp.txt')
-        with open('temp.txt', 'r') as file:
-            fileNames = file.readlines()
-            #print(fileNames)
-            for f in fileNames[step*number:number*(step+1)]:
-                if '.root' in f:
-                    #print('Including root://hip-cms-se.csc.fi://%s file'%(f))
-                    #tchain.Add(os.path.join('davs://redirector.t2.ucsd.edu:1095', f))
-                    files.append('root://hip-cms-se.csc.fi://'+f[:-1])
-        os.system('rm temp.txt')
+        help = helper(inputdir, central, redirector)
+        fileNames = help.getFiles(step, number)
     else:
         tchain = r.TChain('Events')
         for root, dirs, files in os.walk(inputdir):

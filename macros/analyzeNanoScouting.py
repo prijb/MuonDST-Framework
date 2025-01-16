@@ -20,6 +20,10 @@ r.gROOT.SetBatch(1)
 r.setTDRStyle()
 hep.style.use("CMS")
 
+### Configuration
+doEfficiencies = True
+
+
 ### Plotting functions
 
 def getValues(histo):
@@ -65,6 +69,7 @@ if __name__ == "__main__":
 
     parser = optparse.OptionParser(usage='usage: %prog [opts] FilenameWithSamples', version='%prog 1.0')
     parser.add_option('--l1', action='store', type=str,  dest='l1', default='Total', help='Total or L1 seed name')
+    parser.add_option('--doEfficiency', action='store', type=int,  dest='l1', default=0, help='Select if the code runs efficiencies')
     parser.add_option('--inDir', action='store', type=str,  dest='inDir', default='Total', help='Input dir')
     parser.add_option('--tag', action='store', type=str,  dest='tag', default='tag', help='Input dir')
     parser.add_option('--hlt', action='store', type=str,  dest='hlt', default='', help='HLT path')
@@ -121,46 +126,77 @@ if __name__ == "__main__":
     
 
     ## DST path selection
-    if (hlt != '' and hlt!='none'):
+    if (hlt != '' and hlt!='none' and not doEfficiencies):
         rdf = rdf.Filter("%s  == 1"%(hlt))
+    elif doEfficiencies:
+        rdf = rdf.Filter("(DST_PFScouting_ZeroBias == 1 || DST_PFScouting_DoubleEG == 1 || DST_PFScouting_JetHT == 1)")
 
     ## Number of muons selection
     # nScoutingMuonNoVtx > 1
+    #rdf = rdf.Filter("(nScoutingMuonNoVtx > 1)")
     #rdf = rdf.Filter("(n%s > 1)"%(muon))
-    rdf = rdf.Filter("(nScoutingMuonNoVtx > 1)")
+
+    ## Select the pt cut for selection
+    if doEfficiencies:
+        minPt = 0.
+    else:
+        minPt = 3.
+
 
     ## Definitions
     print('Setting definitions...')
     rdf = rdf.Define("%s_vec"%(muon), "GetTLorentzVector(%s_pt, %s_eta, %s_phi, 0.106)"%(muon,muon,muon))
-    rdf = rdf.Define("Di%s_idx"%(muon), "GetDimuonPairs(%s_charge, %s_vec)"%(muon,muon))
+    rdf = rdf.Define("Di%s_idx"%(muon), "GetDimuonPairs(%s_charge, %s_vec, %f)"%(muon,muon, minPt))
     rdf = rdf.Define("Good_Di%s_idx"%(muon), "PruneDimuonPairs(Di%s_idx, Di%s_idx)"%(muon,muon))
-    rdf = rdf.Define("Di%s_mass"%(muon), "GetDimuonMass(Good_Di%s_idx, %s_vec)"%(muon,muon))
+    #rdf = rdf.Define("Di%s_mass"%(muon), "GetDimuonMass(Good_Di%s_idx, %s_vec)"%(muon,muon))
+    rdf = rdf.Define("Di%s_mass"%(muon), "GetDimuonMass(Di%s_idx, %s_vec)"%(muon,muon))
+    rdf = rdf.Define("Di%s_idx_leading"%(muon), "Di%s_idx[0]"%(muon))
+    rdf = rdf.Define("Di%s_idx_subleading"%(muon), "Di%s_idx[1]"%(muon))
+    rdf = rdf.Define("Di%s_vec_leading"%(muon), "%s_vec[Di%s_idx_leading]"%(muon,muon))
+    rdf = rdf.Define("Di%s_vec_subleading"%(muon), "%s_vec[Di%s_idx_subleading]"%(muon,muon))
+    rdf = rdf.Define("Di%s_pt_leading"%(muon), "Di%s_vec_leading.Pt()"%(muon))
+    rdf = rdf.Define("Di%s_eta_leading"%(muon), "Di%s_vec_leading.Eta()"%(muon))
+    rdf = rdf.Define("Di%s_pt_subleading"%(muon), "Di%s_vec_subleading.Pt()"%(muon))
+    rdf = rdf.Define("Di%s_eta_subleading"%(muon), "Di%s_vec_subleading.Eta()"%(muon))
     print('Definitions set')
+    #rdf.Display(["Di%s_idx"%(muon), "Good_Di%s_idx"%(muon)]).Print()
     
     ## Post-filter
     #rdf = rdf.Filter("(Good_DiMuon_idx.size() == 2) && (Good_Di%s_idx.size() == 2)"%(muon))
     rdf = rdf.Filter("(Di%s_mass.size() == 1)"%(muon))
+    #rdf = rdf.Filter("(Di%s_mass.size() == 1) && (Good_Di%s_idx.size()==2)"%(muon, muon))
     #rdf = rdf.Filter("(Good_Di%s_idx.size() == 2)"%muon)
     #rdf = rdf.Filter("(max_idx > %s_vec.size())"%(muon))
     #rdf.Display(['DiMuon_idx', 'Di%s_idx'%muon]).Print()
     #rdf.Display(['Good_DiMuon_idx', 'Good_Di%s_idx'%muon, 'max_idx', '%s_vec'%(muon)]).Print()
-    #rdf.Display(['DiMuon_mass', 'Di%s_mass'%muon]).Print()
+    display = True
+    if display:
+        #rdf.Display('%s_vec[Good_Di%s_idx[0]]'%(muon,muon))#, '%s_vec[Good_Di%s_idx[1]]'%(muon,muon)]).Print()
+        #rdf.Display('%s_vec'%(muon))#, '%s_vec[Good_Di%s_idx[1]]'%(muon,muon)]).Print()
+         rdf.Display(["Di%s_idx"%(muon),"Good_Di%s_idx"%(muon)]).Print()
+
+    # If we do efficiencies, we do it in the JPsi peak:
+    if doEfficiencies:
+        rdf = rdf.Define("Dimuon_mass", "Di%s_mass[0]"%(muon))
+        rdf = rdf.Filter("(Dimuon_mass > 2.8) && (Dimuon_mass < 3.4)")
+
 
     ## L1 seed analysis
     L1Seeds = {}
-    if 'DoubleMuon' in hlt:
+    if 'DoubleMuon' in hlt or 'ZeroBias' in hlt:
         L1Seeds['L1_DoubleMu_15_7'] = ['L1_DoubleMu_15_7']
         L1Seeds['L1_DoubleMu4p5er2p0_SQ_OS_Mass_X'] = ['L1_DoubleMu4p5er2p0_SQ_OS_Mass_Min7', 'L1_DoubleMu4p5er2p0_SQ_OS_Mass_7to18']
         L1Seeds['L1_DoubleMu8_SQ'] = ['L1_DoubleMu8_SQ']
         L1Seeds['L1_DoubleMuX_SQ_OS_dR_MaxY'] = ['L1_DoubleMu4er2p0_SQ_OS_dR_Max1p6', 'L1_DoubleMu0er1p4_SQ_OS_dR_Max1p4', 'L1_DoubleMu4p5_SQ_OS_dR_Max1p2']
         L1Seeds['L1_DoubleMu0_UptX'] = ['L1_DoubleMu0_Upt15_Upt7', 'L1_DoubleMu0_Upt6_IP_Min1_Upt4', 'L1_DoubleMu0_Upt6_SQ_er2p0', 'L1_DoubleMu0_Upt7_SQ_er2p0', 'L1_DoubleMu0_Upt8_SQ_er2p0']
-    elif 'SingleMu' in hlt:
-        #L1Seeds['L1_SingleMu5_SQ14_BMTF'] = ['L1_SingleMu5_SQ14_BMTF']
-        #L1Seeds['L1_SingleMu6_SQ14_BMTF'] = ['L1_SingleMu6_SQ14_BMTF']
-        #L1Seeds['L1_SingleMu7_SQ14_BMTF'] = ['L1_SingleMu7_SQ14_BMTF']
-        #L1Seeds['L1_SingleMu8_SQ14_BMTF'] = ['L1_SingleMu8_SQ14_BMTF']
-        #L1Seeds['L1_SingleMu9_SQ14_BMTF'] = ['L1_SingleMu9_SQ14_BMTF']
-        #L1Seeds['L1_SingleMu10_SQ14_BMTF'] = ['L1_SingleMu10_SQ14_BMTF']
+    elif 'SingleMu' in hlt or 'ZeroBias' in hlt:
+        L1Seeds['L1_SingleMu11_SQ14_BMTF'] = ['L1_SingleMu11_SQ14_BMTF']
+    elif doEfficiencies:
+        L1Seeds['L1_DoubleMu_15_7'] = ['L1_DoubleMu_15_7']
+        L1Seeds['L1_DoubleMu4p5er2p0_SQ_OS_Mass_X'] = ['L1_DoubleMu4p5er2p0_SQ_OS_Mass_Min7', 'L1_DoubleMu4p5er2p0_SQ_OS_Mass_7to18']
+        L1Seeds['L1_DoubleMu8_SQ'] = ['L1_DoubleMu8_SQ']
+        L1Seeds['L1_DoubleMuX_SQ_OS_dR_MaxY'] = ['L1_DoubleMu4er2p0_SQ_OS_dR_Max1p6', 'L1_DoubleMu0er1p4_SQ_OS_dR_Max1p4', 'L1_DoubleMu4p5_SQ_OS_dR_Max1p2']
+        L1Seeds['L1_DoubleMu0_UptX'] = ['L1_DoubleMu0_Upt15_Upt7', 'L1_DoubleMu0_Upt6_IP_Min1_Upt4', 'L1_DoubleMu0_Upt6_SQ_er2p0', 'L1_DoubleMu0_Upt7_SQ_er2p0', 'L1_DoubleMu0_Upt8_SQ_er2p0']
         L1Seeds['L1_SingleMu11_SQ14_BMTF'] = ['L1_SingleMu11_SQ14_BMTF']
     alls = []
     if len(L1Seeds.keys()) > 0:
@@ -179,17 +215,27 @@ if __name__ == "__main__":
     pt_bins = np.linspace(0, 50, 101)
     eta_bins = np.linspace(-3, 3, 51)
     phi_bins = np.linspace(-3.14, 3.14, 51)
-    mass_jpsi_bins = np.linspace(2.6, 3.6, 101)
+    mass_jpsi_bins = np.linspace(2.8, 3.4, 101)
 
     histos = []
-    for l1group in L1Seeds.keys():
-        icond = ""
-        for seed in L1Seeds[l1group]:
-            icond += "%s || "%(seed)
-        print("(%s)"%(icond[:-4]))
-        irdf = rdf.Filter("(%s)"%(icond[:-4]))
-        histos.append(irdf.Histo1D(('Di%s_mass_%s'%(muon,l1group), r'; Mass $m_{\mu\mu}$ (GeV); Number of dimuons', len(np.array(mbins))-1, np.array(mbins)), 'Di%s_mass'%(muon)))
-        histos.append(irdf.Histo1D(('Di%s_mass_jpsi%s'%(muon,l1group), r'; Mass $m_{\mu\mu}$ (GeV); Number of dimuons', len(np.array(mass_jpsi_bins))-1, np.array(mass_jpsi_bins)), 'Di%s_mass'%(muon)))
+    if doEfficiencies:
+        histos.append(rdf.Histo1D(('Di%s_leadingPt_denominator'%(muon), r'; Leading muon $p_{T}$ (GeV); Number of dimuons', len(np.array(pt_bins))-1, np.array(pt_bins)), "Di%s_pt_leading"%(muon)))
+        histos.append(rdf.Histo1D(('Di%s_subleadingPt_denominator'%(muon), r'; Subleading muon $p_{T}$ (GeV); Number of dimuons', len(np.array(pt_bins))-1, np.array(pt_bins)), "Di%s_pt_subleading"%(muon)))
+        for l1group in L1Seeds.keys():
+            icond = ""
+            for seed in L1Seeds[l1group]:
+                icond += "%s || "%(seed)
+            irdf = rdf.Filter("(%s)"%(icond[:-4]))
+            histos.append(irdf.Histo1D(('Di%s_leadingPt_numerator_%s'%(muon,l1group), r'; Leading muon $p_{T}$ (GeV); Number of dimuons', len(np.array(pt_bins))-1, np.array(pt_bins)), "Di%s_pt_leading"%(muon)))
+            histos.append(irdf.Histo1D(('Di%s_subleadingPt_numerator_%s'%(muon,l1group), r'; Subleading muon $p_{T}$ (GeV); Number of dimuons', len(np.array(pt_bins))-1, np.array(pt_bins)), "Di%s_pt_subleading"%(muon)))
+    else:
+        for l1group in L1Seeds.keys():
+            icond = ""
+            for seed in L1Seeds[l1group]:
+                icond += "%s || "%(seed)
+            irdf = rdf.Filter("(%s)"%(icond[:-4]))
+            #histos.append(irdf.Histo1D(('Di%s_mass_%s'%(muon,l1group), r'; Mass $m_{\mu\mu}$ (GeV); Number of dimuons', len(np.array(mbins))-1, np.array(mbins)), 'Di%s_mass'%(muon)))
+            histos.append(irdf.Histo1D(('Di%s_mass_jpsi%s'%(muon,l1group), r'; Mass $m_{\mu\mu}$ (GeV); Number of dimuons', len(np.array(mass_jpsi_bins))-1, np.array(mass_jpsi_bins)), 'Di%s_mass'%(muon)))
     for histo in histos:
         print('Histogram with %f'%(histo.GetEntries()))
 

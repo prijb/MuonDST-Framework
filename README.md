@@ -7,7 +7,7 @@ The Ntuplizer is an EDAnalyzer. More information about this class and its struct
 
 ## How to install
 
-Recommended release for this framework is the latest CMSSW version released for trigger studies (as of today 26/04/2024, CMSSW_14_0_5). To install simply do:
+Recommended release for this framework is the latest CMSSW version released for trigger studies (as of today 18/11/2024, CMSSW_14_0_17). To install simply do:
 
 ```
 cmsrel CMSSW_X_Y_Z
@@ -19,7 +19,28 @@ git clone git@github.com:CeliaFernandez/MuonDST-Framework.git
 scram b -j 8
 ```
 
-## Structure
+## Plugins
+
+### Efficiencies in MC simulation
+
+Managed by the ```efficiencyMC``` plugin declared in ```plugins/efficiencyMC.cc```.
+
+Gets a set of efficiencies wrt the generated muons in the sample, for now assuming that their mother particle is a Dark Photon $Z_{D}$ (```pdgId=1023```). Testing dataset is:
+```
+/HTo2ZdTo2mu2x_MZd-6_ctau-10mm-pythia8/fernance-private-RunIII2024Summer24-HLTnoPU-de85c6dd9fb422b173a50ba3383d69ce/USER
+```
+(See details of this sample in Productions section)
+
+How to run locally (just for testing):
+```
+cmsRun runMCEfficiency_cfg.py inputDataset=/HTo2ZdTo2mu2x_MZd-6_ctau-10mm-pythia8/fernance-private-RunIII2024Summer24-HLTnoPU-de85c6dd9fb422b173a50ba3383d69ce/USER minFile=0 maxFile=1 output=output
+```
+
+How to run with condor (within ```MuonDST-Framework/test/condor/```):
+```
+# sh runMCEfficiency_onCondor.sh [DATASET] [OUTPUT_PATH]
+sh runMCEfficiency_onCondor.sh /HTo2ZdTo2mu2x_MZd-6_ctau-10mm-pythia8/fernance-private-RunIII2024Summer24-HLTnoPU-de85c6dd9fb422b173a50ba3383d69ce/USER /eos/user/f/fernance/DST-Muons/Reconstruction-studies/HZdZd/v1
+```
 
 
 ## How to re-HLT a given sample

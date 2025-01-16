@@ -3,6 +3,7 @@ from ROOT import gDirectory, gROOT, gStyle, TLatex
 import optparse
 import os
 import copy
+from matplotlib.colors import LogNorm
 
 def getObject(filename, key):
 
@@ -703,7 +704,7 @@ def plotEfficiency(name, target, reference, output, tlabel, rlabel, relval, ylog
     if output[-1] != '/': output = output + '/'
     c1.SaveAs(output + name +'.png')
 
-
+   
 ## Plot efficiency with validation style
 def plotEfficiencyV2(name, target, reference, output, tlabel, rlabel, relval, ylog = False, rebin = False):
 
@@ -729,7 +730,7 @@ def plotEfficiencyV2(name, target, reference, output, tlabel, rlabel, relval, yl
         tmp_den.SetBinError(n+1, reference.GetEfficiencyErrorLow(n+1))
         tmp_num.SetBinError(n+1, target.GetEfficiencyErrorLow(n+1))
     ratio = tmp_num.Clone(name+'_ratio')
-    ratio.Divide(tmp_den) 
+    ratio.Divide(tmp_den)
 
     ratio.GetYaxis().SetTitle("Ratio")
     ratio.GetYaxis().CenterTitle()
@@ -752,83 +753,148 @@ def plotEfficiencyV2(name, target, reference, output, tlabel, rlabel, relval, yl
     # Pads
     pad1 = r.TPad("pad1", "pad1", 0, 0.25, 1, 1.0)
     pad1.SetBottomMargin(0.03)
+
+##
+## mplhep tools
+##
+import mplhep as hep
+import matplotlib.pyplot as plt
+import numpy as np
+
+colors = [ 'tab:'+c for c in ['blue', 'orange', 'green', 'red', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan']]
+
+def getValues(histo):
+    values = []
+    bins = []
+    for n in range(1, histo.GetNbinsX()+1):
+        values.append(histo.GetBinContent(n))
+        bins.append(histo.GetBinLowEdge(n))
+    bins.append(histo.GetBinLowEdge(n) + histo.GetBinWidth(n))
+    return np.array(values), np.array(bins)
+
+def get2DValues(histo):
+    nbins_x = histo.GetNbinsX()
+    nbins_y = histo.GetNbinsY()
+    values = np.zeros((nbins_x, nbins_y))
+    x_edges = np.zeros(nbins_x + 1)
+    y_edges = np.zeros(nbins_y + 1)
+    for i in range(1, nbins_x + 1):
+        for j in range(1, nbins_y + 1):
+            values[i-1,j-1] = histo.GetBinContent(i,j)
+    for i in range(1, nbins_x+1):
+        x_edges[i-1] = histo.GetXaxis().GetBinLowEdge(i)
+    for j in range(1, nbins_y+1):
+        y_edges[j-1] = histo.GetYaxis().GetBinLowEdge(j)
+    x_edges[-1] = histo.GetXaxis().GetBinUpEdge(nbins_x)
+    y_edges[-1] = histo.GetYaxis().GetBinUpEdge(nbins_y)
+    return values, x_edges, y_edges
+
+def getEfficiencyValues(eff):
+    values = []
+    lowerr = []
+    uperr = []
+    points = []
+    histo = eff.GetTotalHistogram()
+    for n in range(1, histo.GetNbinsX()+1):
+        values.append(eff.GetEfficiency(n))
+        lowerr.append(eff.GetEfficiencyErrorLow(n))
+        uperr.append(eff.GetEfficiencyErrorUp(n))
+        points.append(histo.GetBinLowEdge(n) + 0.5*histo.GetBinWidth(n))
+    return np.array(values), np.array(points), np.array(lowerr), np.array(uperr)
+
+def plotEfficiencyHEP(name, efficiency, output, label, xaxis = '', yaxis='', ylog = False, rebin = False):
+    plt.style.use(hep.style.CMS)
+    fig, ax = plt.subplots(figsize=(10, 8))
+    hep.cms.label("Preliminary", data=True, year='2024', com='13.6', ax=ax)
+    ax.set_xlabel(xaxis, fontsize=24)
+    ax.set_ylabel(yaxis, fontsize=24)
+    ax.set_ylim(0.0, 1.2)
+    es_, ps_, ls_, us_ = getEfficiencyValues(efficiency)
+    ax.errorbar(ps_, es_, yerr=[ls_,us_], xerr=0.5*(ps_[1]-ps_[0]), fmt='o', capsize=5, label=label, color='tab:blue', markersize=8)
+    ax.legend(loc='upper left', fontsize = 18, frameon = True, ncol=1)
+    fig.savefig('%s/%s.png'%(output,name), dpi=140)
+
+def plotEfficiencyComparisonHEP(name, efficiencies, output, labels, xaxis = '', yaxis='', ylog = False, rebin = False):
+    plt.style.use(hep.style.CMS)
+    fig, (ax, ax_ratio) = plt.subplots(2, 1, gridspec_kw={'height_ratios': [4, 1], 'hspace': 0.05}, sharex=True, figsize=(10, 10))
+    hep.cms.label("Preliminary", data=False, year='2024', com='13.6', ax=ax)
+    ax.set_xlabel('')
+    ax_ratio.set_xlabel(xaxis, fontsize=24)
+    ax.set_ylabel(yaxis, fontsize=24)
+    ax_ratio.set_ylabel('Ratio', fontsize=24)
+    ax.set_ylim(0.0, 1.2)
+    es0_, ps0_, ls0_, us0_ = getEfficiencyValues(efficiencies[0])
+    for e,eff in enumerate(efficiencies):
+        es_, ps_, ls_, us_ = getEfficiencyValues(eff)
+        ax.errorbar(ps_, es_, yerr=[ls_,us_], xerr=0.5*(ps_[1]-ps_[0]), fmt='o', capsize=5, label=labels[e], color=colors[e], markersize=8)
+        if e>0 and e==1:
+            err0 = [ls0_[x] if es0_[x] > es_[x] else us0_[x] for x in range(0, len(es0_))]
+            err1 = [ls_[x] if es_[x] > es0_[x] else us_[x] for x in range(0, len(es_))]
+            err = es_/es0_*((err0/es0_)**2 + (err1/es_)**2)
+            ax_ratio.errorbar(ps_, es_/es0_, yerr=err, xerr=0.5*(ps_[1]-ps_[0]), fmt='o', capsize=5, label=labels[e], color='k', markersize=8)
+    ax.legend(loc='upper left', fontsize = 18, frameon = True, ncol=1)
+    fig.savefig('%s/%s_fit.png'%(output,name), dpi=140)
+    
+def plotHistograms(name, histos, var, labels, isstack, year='X', lumi='', ylog=False, xlog=False, extra = ''):
+    hs = []
+    colors = [ 'tab:'+c for c in ['blue', 'orange', 'green', 'red', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan']]
+    
+    for h in histos:
+        hs_, bins_ = getValues(h)
+        print(len(hs_))
+        print(len(bins_))
+        hs.append(hs_)
+        bins = bins_
+    fig, ax = plt.subplots(figsize=(10, 8))
+    htype = 'fill' if isstack else 'step'
+    hep.histplot(
+        hs,
+        bins=bins, # Assumed that all of them have same binning
+        histtype=htype,
+        color=colors[:len(hs)],
+        edgecolor="black" if isstack else colors[:len(hs)],
+        label=labels,
+        stack=isstack,
+        ax=ax,
+    )
+    hep.cms.label("Preliminary", data=True, year=year, lumi=lumi, com='13.6')
+    ax.set_xlabel(histos[0].GetXaxis().GetTitle(), fontsize=20)
+    ax.set_ylabel("Events", fontsize=20)
     if ylog:
-        pad1.SetLogy(1)
-    pad1.Draw()
-
-    # Pad 2 drawing
-    r.gStyle.SetOptStat(0)
-    pad2 = r.TPad("pad2", "pad2", 0, 0.0, 1, 0.25)
-    pad2.SetTopMargin(0.0);
-    pad2.SetBottomMargin(0.30);
-    pad2.Draw();
-
-    # Pad 1 drawing
-    _h = r.TH1F("h", ";;Efficiency", 1, tmp_num.GetBinLowEdge(1), tmp_num.GetBinLowEdge(tmp_num.GetNbinsX()) + tmp_num.GetBinWidth(tmp_num.GetNbinsX()))
-    _h.SetMinimum(0.0)
-    _h.SetMaximum(1.25)
-    _h.GetYaxis().SetTitleSize(0.045)
-    _h.GetYaxis().SetTitle(tmp_num.GetYaxis().GetTitle())
-    _h.GetYaxis().SetLabelSize(0.045)
-    _h.GetXaxis().SetLabelSize(0)
-    pad1.cd()
-    _h.Draw("AXIS")
-    reference.Draw('PLE3, SAME')
-    target.Draw('PLE3, SAME')
-
-    legend = r.TLegend(0.35, 0.76, 0.7, 0.87)
-    legend.SetFillStyle(0)
-    legend.SetTextFont(42)
-    legend.SetTextSize(0.035)
-    legend.SetLineWidth(0)
-    legend.SetBorderSize(0)
-    legend.AddEntry(reference, rlabel, 'pl')
-    legend.AddEntry(target, tlabel, 'pl')
-    legend.Draw()
-
-
-    # Pad 2 final drawing
-    pad2.cd()
-    #ratio.SetMinimum(0.9)
-    #ratio.SetMaximum(1.1)
-    ratio.Draw("P")
-    line = r.TLine(ratio.GetBinLowEdge(1), 1, ratio.GetBinLowEdge(ratio.GetNbinsX()+1), 1)
-    line.Draw("Same")
-
-
-    # Reference text
-    pad1.cd()
-    rvlabel = r.TLatex()
-    rvlabel.SetNDC()
-    rvlabel.SetTextAngle(0)
-    rvlabel.SetTextColor(r.kBlack)
-    rvlabel.SetTextFont(42)
-    rvlabel.SetTextAlign(31)
-    rvlabel.SetTextSize(0.035)
-    rvlabel.DrawLatex(0.88, 0.935, relval)
-
-    # CMS logo
-    latex = TLatex()
-    latex.SetNDC();
-    latex.SetTextAngle(0);
-    latex.SetTextColor(r.kBlack);
-    latex.SetTextFont(42);
-    latex.SetTextAlign(11);
-    latex.SetTextSize(0.065);
-    latex.DrawLatex(0.17, 0.83, "#bf{CMS}")
-
-    latexb = TLatex()
-    latexb.SetNDC();
-    latexb.SetTextAngle(0);
-    latexb.SetTextColor(r.kBlack);
-    latexb.SetTextFont(42);
-    latexb.SetTextAlign(11);
-    latexb.SetTextSize(0.042);
-    latexb.DrawLatex(0.17, 0.78, "#it{Internal}")
-
-    ## Save the plot
-    if output[-1] != '/': output = output + '/'
-    c1.SaveAs(output + name +'.png')
-
-
-
+        ax.set_yscale('log')
+        ax.set_ylim(0.1, 100*max([max(x) for x in hs]))
+    if xlog:
+        ax.set_xscale('log')
+    ax.set_xlim(bins[0], bins[-1])
+    legsize = 16 
+    lcol = 1 #if len(labels)<7 else 2
+    ax.legend(fontsize=legsize, ncol=lcol)
+    ax.text(0.2, 1e8, extra, fontsize=12, color='black')
+    fig.savefig(name+".png", dpi=140)
+    
+    
+def plotHistogram2D(name, histo, label, output, xaxis = '', yaxis='', year='X', lumi=''):    
+    values, x_edges, y_edges = get2DValues(histo)
+    fig, ax = plt.subplots(figsize=(10, 7))
+    im = ax.imshow(
+        values.T, 
+        extent=[x_edges[0], x_edges[-1], y_edges[0], y_edges[-1]],
+        origin='lower',
+        cmap="viridis",
+        norm=LogNorm(vmin=np.min(values[values > 0]), vmax=np.max(values))
+    )
+    cbar = fig.colorbar(im, ax=ax, pad=0.01)
+    cbar.set_label("Yield", fontsize=18)
+    cbar.ax.tick_params(labelsize=14, width=1.5)
+    cbar.outline.set_linewidth(1.5)
+    hep.cms.label("Preliminary", data=False, year=year, com='13.6', fontsize=18)
+    ax.set_xlabel(xaxis, fontsize=18, labelpad=10)
+    ax.set_ylabel(yaxis, fontsize=18, labelpad=10)
+    ax.tick_params(axis='both', which='major', labelsize=14, width=1.5)  # Ticks principales
+    ax.tick_params(axis='both', which='minor', labelsize=14, width=1.5)
+    ax.legend(title=label, fontsize=12, frameon=True, loc='lower right', title_fontsize=12)
+    ax.spines["left"].set_linewidth(1.5)
+    ax.spines["right"].set_linewidth(1.5)
+    ax.spines["top"].set_linewidth(1.5)
+    ax.spines["bottom"].set_linewidth(1.5)
+    fig.savefig(output+'/'+name+".png", dpi=140)

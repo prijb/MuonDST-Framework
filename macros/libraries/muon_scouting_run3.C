@@ -100,21 +100,26 @@ auto PruneDimuonPairs(ROOT::RVec<int> idx, ROOT::RVec<int> comp) {
 
 // Function to make dimuon pairs
 // Returns a vector with muon indexes
-auto GetDimuonPairs(ROOT::RVec<int> charge, ROOT::RVec<TLorentzVector> vec) {
+auto GetDimuonPairs(ROOT::RVec<int> charge, ROOT::RVec<TLorentzVector> vec, float minPt) {
   ROOT::RVec<int> out;
   for (int i = 0; i < charge.size(); i++) {
     if (std::find(out.begin(), out.end(), i) != out.end())
       continue;
-    if (vec.at(i).Pt() < 3. || fabs(vec.at(i).Eta()) > 2.4)
+    if (vec.at(i).Pt() < minPt || fabs(vec.at(i).Eta()) > 2.4)
       continue;
     for (int j= i+1; j < charge.size(); j++) {
       if (std::find(out.begin(), out.end(), j) != out.end())
         continue;
-      if (vec.at(j).Pt() < 3. || fabs(vec.at(j).Eta()) > 2.4)
+      if (vec.at(j).Pt() < minPt || fabs(vec.at(j).Eta()) > 2.4)
         continue;
       if (charge.at(i)*charge.at(j) < 0.0 && vec.at(i).DeltaR(vec.at(j)) > 0.2) {
-        out.push_back(i);
-        out.push_back(j);
+        if (vec.at(i).Pt() > vec.at(j).Pt()) {
+          out.push_back(i);
+          out.push_back(j);
+        } else {
+          out.push_back(j);
+          out.push_back(i);
+        }
       }
     }
   }

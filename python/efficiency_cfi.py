@@ -5,11 +5,18 @@ efficiencyMC = cms.EDAnalyzer('efficiencyMC',
     isData = cms.bool(False),
     EventInfo = cms.InputTag("generator"),
     RunInfo = cms.InputTag("generator"),
-    BeamSpot = cms.InputTag("offlineBeamSpot"),
+    #BeamSpot = cms.InputTag("offlineBeamSpot"),
     muonPacker = cms.InputTag("hltScoutingMuonPacker"),
     muonPackerVtx = cms.InputTag("hltScoutingMuonPackerVtx"),
     muonPackerNoVtx = cms.InputTag("hltScoutingMuonPackerNoVtx"),
-    generatedParticles = cms.InputTag("genParticles")
+    generatedParticles = cms.InputTag("genParticles"),
+    triggerConfiguration = cms.PSet(
+        hltResults            = cms.InputTag('TriggerResults','','HLTX'),
+        l1tResults            = cms.InputTag('','',''),
+        l1tIgnoreMaskAndPrescale = cms.bool(False),
+        throw                 = cms.bool(True),
+        usePathStatus = cms.bool(False),
+    )
 )
 
 
