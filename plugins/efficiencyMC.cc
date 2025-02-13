@@ -20,6 +20,7 @@
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
 #include "DataFormats/Scouting/interface/Run3ScoutingMuon.h"
+#include "DataFormats/Scouting/interface/Run3ScoutingVertex.h"
 
 #include "DataFormats/Math/interface/deltaR.h"
 
@@ -77,6 +78,12 @@ class efficiencyMC : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       // "hltScoutingMuonPacker" (Old)
       edm::EDGetTokenT<edm::View<Run3ScoutingMuon> > muonsToken;
       edm::Handle<edm::View<Run3ScoutingMuon> > muons;
+      // "hltScoutingMuonPackerNoVtx" (Updated)
+      edm::EDGetTokenT<edm::View<Run3ScoutingVertex> > svsNoVtxToken;
+      edm::Handle<edm::View<Run3ScoutingVertex> > svsNoVtx;
+      // "hltScoutingMuonPackerVtx" (Updated)
+      edm::EDGetTokenT<edm::View<Run3ScoutingVertex> > svsVtxToken;
+      edm::Handle<edm::View<Run3ScoutingVertex> > svsVtx;
       // GenParticles
       edm::EDGetTokenT<edm::View<reco::GenParticle> > genToken;
       edm::Handle<edm::View<reco::GenParticle> > gens;
@@ -119,10 +126,12 @@ class efficiencyMC : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       TH1F* histo_pt_vtx;
       TH1F* histo_eta_vtx;
       TH1F* histo_phi_vtx;
+      TH1F* histo_lxy_vtx;
 
       TH1F* histo_pt_novtx;
       TH1F* histo_eta_novtx;
       TH1F* histo_phi_novtx;
+      TH1F* histo_lxy_novtx;
 
       TEfficiency *efficiency_pt_std;
       TEfficiency *efficiency_pt_vtx;
@@ -136,6 +145,18 @@ class efficiencyMC : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       TEfficiency *efficiency_trg_DoubleMuonNoVtx;
       TEfficiency *efficiency_trg_DoubleMuonOR;
 
+      TEfficiency *efficiency_minpt_DoubleMuonVtx;
+      TEfficiency *efficiency_minpt_DoubleMuonNoVtx;
+      TEfficiency *efficiency_minpt_DoubleMuonOR;
+
+      TEfficiency *efficiency_minlxy_DoubleMuonVtx;
+      TEfficiency *efficiency_minlxy_DoubleMuonNoVtx;
+      TEfficiency *efficiency_minlxy_DoubleMuonOR;
+
+      TEfficiency *efficiency_maxlxy_DoubleMuonVtx;
+      TEfficiency *efficiency_maxlxy_DoubleMuonNoVtx;
+      TEfficiency *efficiency_maxlxy_DoubleMuonOR;
+
       TH1F *counts;
       TFile *file_out;
 
@@ -143,9 +164,7 @@ class efficiencyMC : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 
 // Constructor
 efficiencyMC::efficiencyMC(const edm::ParameterSet& iConfig) :
-   triggerCache_(triggerExpression::Data(iConfig.getParameterSet("triggerConfiguration"),
-   
-   consumesCollector()))
+   triggerCache_(triggerExpression::Data(iConfig.getParameterSet("triggerConfiguration"), consumesCollector()))
 {
 
    usesResource("TFileService");
@@ -177,10 +196,12 @@ efficiencyMC::efficiencyMC(const edm::ParameterSet& iConfig) :
    histo_pt_vtx = new TH1F("histo_pt_vtx", ";Scouting muon p_{T} (GeV); Number of muons", 100, 0, 50);
    histo_eta_vtx = new TH1F("histo_eta_vtx", ";Scouting muon #eta; Number of muons", 30, -4, 4);
    histo_phi_vtx = new TH1F("histo_phi_vtx", ";Scouting muon #phi (rad); Number of muons", 30, -3.2, 3.2);
+   histo_lxy_vtx = new TH1F("histo_lxy_vtx", ";Scouting SV (cm); Number of vertices", 80, 0, 80);
 
    histo_pt_novtx = new TH1F("histo_pt_novtx", ";Scouting muon p_{T} (GeV); Number of muons", 100, 0, 50);
    histo_eta_novtx = new TH1F("histo_eta_novtx", ";Scouting muon #eta; Number of muons", 30, -4, 4);
    histo_phi_novtx = new TH1F("histo_phi_novtx", ";Scouting muon #phi (rad); Number of muons", 30, -3.2, 3.2);
+   histo_lxy_novtx = new TH1F("histo_lxy_novtx", ";Scouting SV (cm); Number of vertices", 80, 0, 80);
 
    efficiency_pt_std = new TEfficiency("efficiency_pt_std", ";Generated p_{T} (GeV); HLT efficiency", 100, 0, 50);
    efficiency_pt_vtx = new TEfficiency("efficiency_pt_vtx", ";Generated p_{T} (GeV); HLT efficiency", 100, 0, 50);
@@ -190,14 +211,28 @@ efficiencyMC::efficiencyMC(const edm::ParameterSet& iConfig) :
    efficiency_lxy_novtx = new TEfficiency("efficiency_lxty_novtx", ";Generated l_{xy} (cm); HLT efficiency", 40, 0, 80);
    efficiency_lxy_or = new TEfficiency("efficiency_lxty_or", ";Generated l_{xy} (cm); HLT efficiency", 40, 0, 80);
 
-   efficiency_trg_DoubleMuonVtx = new TEfficiency("efficiency_trg_DoubleMuonVtx", "DoubleMuonVtx efficiency; Leading p_{T} (GeV) ; Subleading p_{T} (GeV)", 20, 0, 40, 20, 0, 40);
-   efficiency_trg_DoubleMuonNoVtx = new TEfficiency("efficiency_trg_DoubleMuonNoVtx", "DoubleMuonNoVtx efficiency; Leading p_{T} (GeV) ; Subleading p_{T} (GeV)", 20, 0, 40, 20, 0, 40);
-   efficiency_trg_DoubleMuonOR = new TEfficiency("efficiency_trg_DoubleMuonOR", "DoubleMuonOR efficiency; Leading p_{T} (GeV) ; Subleading p_{T} (GeV)", 20, 0, 40, 20, 0 , 40);
+   efficiency_trg_DoubleMuonVtx = new TEfficiency("efficiency_trg_DoubleMuonVtx", "DoubleMuonVtx efficiency; Leading p_{T} (GeV) ; Subleading p_{T} (GeV)", 20, 0, 20, 20, 0, 20);
+   efficiency_trg_DoubleMuonNoVtx = new TEfficiency("efficiency_trg_DoubleMuonNoVtx", "DoubleMuonNoVtx efficiency; Leading p_{T} (GeV) ; Subleading p_{T} (GeV)", 20, 0, 20, 20, 0, 20);
+   efficiency_trg_DoubleMuonOR = new TEfficiency("efficiency_trg_DoubleMuonOR", "DoubleMuonOR efficiency; Leading p_{T} (GeV) ; Subleading p_{T} (GeV)", 20, 0, 20, 20, 0 , 20);
+
+   efficiency_minpt_DoubleMuonVtx = new TEfficiency("efficiency_minpt_DoubleMuonVtx", ";Subleading p_{T} (GeV); HLT efficiency", 50, 0, 50);
+   efficiency_minpt_DoubleMuonNoVtx = new TEfficiency("efficiency_minpt_DoubleMuonNoVtx", ";Subleading p_{T} (GeV); HLT efficiency", 50, 0, 50);
+   efficiency_minpt_DoubleMuonOR = new TEfficiency("efficiency_minpt_DoubleMuonOR", ";Subleading p_{T} (GeV); HLT efficiency", 50, 0, 50);
+
+   efficiency_minlxy_DoubleMuonVtx = new TEfficiency("efficiency_minlxy_DoubleMuonVtx", ";Generated min l_{xy} (cm); HLT efficiency", 40, 0, 80);
+   efficiency_minlxy_DoubleMuonNoVtx = new TEfficiency("efficiency_minlxy_DoubleMuonNoVtx", ";Generated min l_{xy} (cm); HLT efficiency", 40, 0, 80);
+   efficiency_minlxy_DoubleMuonOR = new TEfficiency("efficiency_minlxy_DoubleMuonOR", ";Generated min l_{xy} (cm); HLT efficiency", 40, 0, 80);
+
+   efficiency_maxlxy_DoubleMuonVtx = new TEfficiency("efficiency_maxlxy_DoubleMuonVtx", ";Generated max l_{xy} (cm); HLT efficiency", 40, 0, 80);
+   efficiency_maxlxy_DoubleMuonNoVtx = new TEfficiency("efficiency_maxlxy_DoubleMuonNoVtx", ";Generated max l_{xy} (cm); HLT efficiency", 40, 0, 80);
+   efficiency_maxlxy_DoubleMuonOR = new TEfficiency("efficiency_maxlxy_DoubleMuonOR", ";Generated max l_{xy} (cm); HLT efficiency", 40, 0, 80);
 
    isData = parameters.getParameter<bool>("isData");
    muonsVtxToken = consumes<edm::View<Run3ScoutingMuon> >  (parameters.getParameter<edm::InputTag>("muonPackerVtx"));
    muonsNoVtxToken = consumes<edm::View<Run3ScoutingMuon> >  (parameters.getParameter<edm::InputTag>("muonPackerNoVtx"));
    muonsToken = consumes<edm::View<Run3ScoutingMuon> >  (parameters.getParameter<edm::InputTag>("muonPacker"));
+   svsNoVtxToken = consumes<edm::View<Run3ScoutingVertex> >  (parameters.getParameter<edm::InputTag>("svPackerNoVtx"));
+   svsVtxToken = consumes<edm::View<Run3ScoutingVertex> >  (parameters.getParameter<edm::InputTag>("svPackerVtx"));
    genToken = consumes<edm::View<reco::GenParticle> >  (parameters.getParameter<edm::InputTag>("generatedParticles"));
 
 }
@@ -256,10 +291,12 @@ void efficiencyMC::endJob()
     histo_pt_vtx->Write();
     histo_eta_vtx->Write();
     histo_phi_vtx->Write();
+    histo_lxy_vtx->Write();
 
     histo_pt_novtx->Write();
     histo_eta_novtx->Write();
     histo_phi_novtx->Write();
+    histo_lxy_novtx->Write();
 
     efficiency_pt_std->Write();
     efficiency_pt_vtx->Write();
@@ -272,6 +309,15 @@ void efficiencyMC::endJob()
     efficiency_trg_DoubleMuonVtx->Write();
     efficiency_trg_DoubleMuonNoVtx->Write();
     efficiency_trg_DoubleMuonOR->Write();
+    efficiency_minpt_DoubleMuonVtx->Write();
+    efficiency_minpt_DoubleMuonNoVtx->Write();
+    efficiency_minpt_DoubleMuonOR->Write();
+    efficiency_minlxy_DoubleMuonVtx->Write();
+    efficiency_minlxy_DoubleMuonNoVtx->Write();
+    efficiency_minlxy_DoubleMuonOR->Write();
+    efficiency_maxlxy_DoubleMuonVtx->Write();
+    efficiency_maxlxy_DoubleMuonNoVtx->Write();
+    efficiency_maxlxy_DoubleMuonOR->Write();
 
     file_out->Close();
 
@@ -293,6 +339,8 @@ void efficiencyMC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
    bool validNoVtx = iEvent.getByToken(muonsNoVtxToken, muonsNoVtx);
    bool validVtx = iEvent.getByToken(muonsVtxToken, muonsVtx);
    bool validStd = iEvent.getByToken(muonsToken, muons);
+   bool validSVNoVtx = iEvent.getByToken(svsNoVtxToken, svsNoVtx);
+   bool validSVVtx = iEvent.getByToken(svsVtxToken, svsVtx);
    iEvent.getByToken(genToken, gens);
 
    // Fill histograms
@@ -317,9 +365,20 @@ void efficiencyMC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
        histo_phi_novtx->Fill(mu.phi());
      }
    }
+   if (validSVVtx) {
+     for (const auto& sv : *svsVtx){
+       histo_lxy_vtx->Fill(sqrt(sv.x()*sv.x() + sv.y()*sv.y()));
+     }
+   }
+   if (validSVNoVtx) {
+     for (const auto& sv : *svsNoVtx){
+       histo_lxy_novtx->Fill(sqrt(sv.x()*sv.x() + sv.y()*sv.y()));
+     }
+   }
 
     // Fill efficiencies (wrt generation)
     std::vector<float> muon_pt;
+    std::vector<float> muon_lxy;
     for (const auto& gp : *gens) {
 
         if (fabs(gp.pdgId()) != 13)
@@ -353,6 +412,9 @@ void efficiencyMC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
         double vy = m.vy();
         double vz = m.vz();
         double lxy = sqrt(vx*vx + vy*vy);
+
+        // Get lxy
+        muon_lxy.push_back(lxy);
 
         histo_pt_gen->Fill(gp.pt());
         histo_eta_gen->Fill(gp.eta());
@@ -465,42 +527,58 @@ void efficiencyMC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     // Trigger evaluation
     bool passNoVtxHLT = false;
     bool passVtxHLT = false;
-    std::cout << muon_pt.size() << std::endl;
     if (muon_pt.size() > 1) {
         std::sort( std::begin(muon_pt), std::end(muon_pt), [&](int i1, int i2){ return i1 > i2; });
+        double minlxy = *std::min_element(muon_lxy.begin(), muon_lxy.end());
+        double maxlxy = *std::max_element(muon_lxy.begin(), muon_lxy.end());
+        std::cout << minlxy << " " << maxlxy << std::endl;
         /*
-        const edm::TriggerNames &names = iEvent.triggerNames(*triggerBits);
-        for (unsigned int itrg = 0; itrg < triggerBits->size(); ++itrg) {
-         TString TrigPath = names.triggerName(itrg);
-         if (TrigPath.Contains("DST_PFScouting_DoubleMuon_v")){
-           if (triggerBits->accept(itrg)) {
-             passNoVtxHLT = true;
-             continue;
-           }
-           break
-         }
-         std::cout << path << "\t" << TrigPath << std::endl;
+        if (triggerCache_.setEvent(iEvent, iSetup)) {
+            const auto& vts_dimu_novtx = triggerExpression::parse("DST_PFScouting_DoubleMuonNoVtx_v*");
+            if (vts_dimu_novtx) {
+                std::cout << "Trigger expression parsed successfully." << std::endl;
+        
+                if (triggerCache_.configurationUpdated()) {
+                    vts_dimu_novtx->init(triggerCache_); 
+                } else {
+                    std::cerr << "Trigger cache configuration not updated!" << std::endl;
+                }
+                vts_dimu_novtx->init(triggerCache_); // duplicate because it's NOT initializing properly (?) 
+                passNoVtxHLT = (*vts_dimu_novtx)(triggerCache_);
+                std::cout << "Result for passNoVtxHLT: " << passNoVtxHLT << std::endl;
+            } else {
+                std::cerr << "Failed to parse trigger expression!" << std::endl;
+            }
+        } else {
+            std::cerr << "Failed to set event in trigger cache!" << std::endl;
         }
         */
-        
+
         if (triggerCache_.setEvent(iEvent, iSetup)){
-          const auto& vts_dimu_novtx(triggerExpression::parse("DST_PFScouting_ZeroBias_v*"));
+          const auto& vts_dimu_novtx(triggerExpression::parse("DST_PFScouting_DoubleMuonNoVtx_v*"));
           if (vts_dimu_novtx){
-             std::cout << "Hola" << std::endl;
-             if (triggerCache_.configurationUpdated()) vts_dimu_novtx->init(triggerCache_);
+             //if (triggerCache_.configurationUpdated()) vts_dimu_novtx->init(triggerCache_);
+             vts_dimu_novtx->init(triggerCache_);
              passNoVtxHLT = (*vts_dimu_novtx)(triggerCache_);
-             std::cout << passNoVtxHLT << "" << muon_pt.at(0) <<  "" << muon_pt.at(1) << std::endl;
           }
-          //const auto& vts_dimu_vtx(triggerExpression::parse("DST_PFScouting_DoubleMuonVtx_v6"));
-          //if (vts_dimu_vtx){
-          //   if (triggerCache_.configurationUpdated()) vts_dimu_vtx->init(triggerCache_);
-          //   passVtxHLT = (*vts_dimu_vtx)(triggerCache_);
-          //}
+          const auto& vts_dimu_vtx(triggerExpression::parse("DST_PFScouting_DoubleMuonVtx_v6"));
+          if (vts_dimu_vtx){
+             vts_dimu_vtx->init(triggerCache_);
+             passVtxHLT = (*vts_dimu_vtx)(triggerCache_);
+          }
         } 
-        
         efficiency_trg_DoubleMuonVtx->Fill(passVtxHLT, muon_pt.at(1), muon_pt.at(0));
         efficiency_trg_DoubleMuonNoVtx->Fill(passNoVtxHLT, muon_pt.at(1), muon_pt.at(0));
         efficiency_trg_DoubleMuonOR->Fill((passVtxHLT || passNoVtxHLT), muon_pt.at(1), muon_pt.at(0));
+        efficiency_minpt_DoubleMuonVtx->Fill(passVtxHLT, muon_pt.at(1));
+        efficiency_minpt_DoubleMuonNoVtx->Fill(passNoVtxHLT, muon_pt.at(1));
+        efficiency_minpt_DoubleMuonOR->Fill((passVtxHLT || passNoVtxHLT), muon_pt.at(1));
+        efficiency_minlxy_DoubleMuonVtx->Fill(passVtxHLT, minlxy);
+        efficiency_minlxy_DoubleMuonNoVtx->Fill(passNoVtxHLT, minlxy);
+        efficiency_minlxy_DoubleMuonOR->Fill((passVtxHLT || passNoVtxHLT), minlxy);
+        efficiency_maxlxy_DoubleMuonVtx->Fill(passVtxHLT, maxlxy);
+        efficiency_maxlxy_DoubleMuonNoVtx->Fill(passNoVtxHLT, maxlxy);
+        efficiency_maxlxy_DoubleMuonOR->Fill((passVtxHLT || passNoVtxHLT), maxlxy);
     }
     
     
