@@ -11,7 +11,7 @@ if __name__ == "__main__":
     r.setTDRStyle()
     r.gStyle.SetPadRightMargin(0.12)
 
-    filename = 'output.root'
+    filename = '/eos/user/f/fernance/DST-Muons/DoubleMuonVtx/output_all.root'
 
     ## Plot histograms
     histo_pt_std = getObject(filename, 'histo_pt_std')
@@ -29,9 +29,9 @@ if __name__ == "__main__":
     efficiency_pt_novtx = getObject(filename, 'efficiency_pt_novtx')
     efficiency_pt_std = getObject(filename, 'efficiency_pt_std')
 
-    plotSimple([histo_pt_std, histo_pt_novtx], 'prueba', option = 'HIST', ylog = False, rebin = False, maxDigits = False, extralabel = 'JPsiToMuMu_PT-0to100 - GRun V107', labels = ['Default', 'ROIs + doublet-recovery'])
-    plotSimple([histo_eta_std, histo_eta_novtx], 'prueba', option = 'HIST', ylog = False, rebin = False, maxDigits = False, extralabel = 'JPsiToMuMu_PT-0to100 - GRun V107', labels = ['Default', 'ROIs + doublet-recovery'])
-    plotSimple([histo_phi_std, histo_phi_novtx], 'prueba', option = 'HIST', ylog = False, rebin = False, maxDigits = False, extralabel = 'JPsiToMuMu_PT-0to100 - GRun V107', labels = ['Default', 'ROIs + doublet-recovery'])
+    plotSimple('histo_pt_comp', [histo_pt_std, histo_pt_novtx], 'prueba', option = 'HIST', ylog = False, rebin = False, maxDigits = False, extralabel = 'JPsiToMuMu_PT-0to100 - GRun V107', labels = ['Default', 'ROIs + doublet-recovery'])
+    plotSimple('histo_pt_comp', [histo_eta_std, histo_eta_novtx], 'prueba', option = 'HIST', ylog = False, rebin = False, maxDigits = False, extralabel = 'JPsiToMuMu_PT-0to100 - GRun V107', labels = ['Default', 'ROIs + doublet-recovery'])
+    plotSimple('histo_pt_comp', [histo_phi_std, histo_phi_novtx], 'prueba', option = 'HIST', ylog = False, rebin = False, maxDigits = False, extralabel = 'JPsiToMuMu_PT-0to100 - GRun V107', labels = ['Default', 'ROIs + doublet-recovery'])
 
     plotSimpleEfficiency(efficiency_pt_novtx, 'prueba', option = 'AP', extralabel = '')
     plotSimpleEfficiency(efficiency_pt_std, 'prueba', option = 'AP', extralabel = '')

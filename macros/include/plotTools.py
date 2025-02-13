@@ -789,6 +789,24 @@ def get2DValues(histo):
     y_edges[-1] = histo.GetYaxis().GetBinUpEdge(nbins_y)
     return values, x_edges, y_edges
 
+def get2DEfficiencies(efficiency):
+    histo = efficiency.GetTotalHistogram()
+    nbins_x = histo.GetNbinsX()
+    nbins_y = histo.GetNbinsY()
+    values = np.zeros((nbins_x, nbins_y))
+    x_edges = np.zeros(nbins_x + 1)
+    y_edges = np.zeros(nbins_y + 1)
+    for i in range(1, nbins_x + 1):
+        for j in range(1, nbins_y + 1):
+            values[i-1,j-1] = efficiency.GetEfficiency(efficiency.GetGlobalBin(i, j))
+    for i in range(1, nbins_x+1):
+        x_edges[i-1] = histo.GetXaxis().GetBinLowEdge(i)
+    for j in range(1, nbins_y+1):
+        y_edges[j-1] = histo.GetYaxis().GetBinLowEdge(j)
+    x_edges[-1] = histo.GetXaxis().GetBinUpEdge(nbins_x)
+    y_edges[-1] = histo.GetYaxis().GetBinUpEdge(nbins_y)
+    return values, x_edges, y_edges
+
 def getEfficiencyValues(eff):
     values = []
     lowerr = []
@@ -898,3 +916,40 @@ def plotHistogram2D(name, histo, label, output, xaxis = '', yaxis='', year='X', 
     ax.spines["top"].set_linewidth(1.5)
     ax.spines["bottom"].set_linewidth(1.5)
     fig.savefig(output+'/'+name+".png", dpi=140)
+
+
+def plotEfficiency2D(name, efficiency, label, output, xaxis = '', yaxis='', year='X', lumi='', text=False):    
+    values, x_edges, y_edges = get2DEfficiencies(efficiency)
+    fig, ax = plt.subplots(figsize=(10, 7))
+    im = ax.imshow(
+        values.T, 
+        extent=[x_edges[0], x_edges[-1], y_edges[0], y_edges[-1]],
+        origin='lower',
+        cmap="viridis",
+        vmin=0.0,
+        vmax=1.0
+    )
+    cbar = fig.colorbar(im, ax=ax, pad=0.01)
+    cbar.set_label("Efficiency", fontsize=18)
+    cbar.ax.tick_params(labelsize=14, width=1.5)
+    cbar.outline.set_linewidth(1.5)
+    for i in range(0, len(x_edges)-1):
+            for j in range(0, len(y_edges)-1):
+                val = values[i,j]
+                sval = '%.2f'%(val)
+                text = ax.text(x_edges[i] + 0.5*(x_edges[i+1]-x_edges[i]), x_edges[j] + 0.5*(x_edges[j+1]-x_edges[j]), sval, ha="center", va="center", color="w", fontsize=8)
+                print(x_edges[i] + 0.5*(x_edges[i+1]-x_edges[i]), x_edges[j] + 0.5*(x_edges[j+1]-x_edges[j]))
+    hep.cms.label("Preliminary", data=False, year=year, com='13.6', fontsize=18)
+    ax.set_xlabel(xaxis, fontsize=18, labelpad=10)
+    ax.set_ylabel(yaxis, fontsize=18, labelpad=10)
+    ax.tick_params(axis='both', which='major', labelsize=14, width=1.5)  # Ticks principales
+    ax.tick_params(axis='both', which='minor', labelsize=14, width=1.5)
+    ax.legend(title=label, fontsize=12, frameon=True, loc='lower right', title_fontsize=12)
+    ax.spines["left"].set_linewidth(1.5)
+    ax.spines["right"].set_linewidth(1.5)
+    ax.spines["top"].set_linewidth(1.5)
+    ax.spines["bottom"].set_linewidth(1.5)
+    fig.savefig(output+'/'+name+".png", dpi=140)
+
+
+
