@@ -404,8 +404,11 @@ void efficiencyMC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
           m = gp;
         }
 
-        //std::cout << fabs(m.mother()->pdgId()) << std::endl;
-        if (fabs(m.mother()->pdgId()) != 1023 && fabs(m.mother()->pdgId()) != 6000211)
+        //// Supported mother particles
+        // 1023: dark photon from HAHM
+        // 6000211: LL scalar from b-hadron decay
+        // 333: phi (BPH)
+        if (fabs(m.mother()->pdgId()) != 1023 && fabs(m.mother()->pdgId()) != 6000211 && fabs(m.mother()->pdgId()) != 333)
           continue;
 
         double vx = m.vx();
