@@ -35,6 +35,9 @@ ntuples2024 = cms.EDAnalyzer('dimuonNtuplizer',
 
 )
 
+ntuples2024MC = ntuples2024.clone()
+ntuples2024MC.isData = False
+
 ntuples2023 = cms.EDAnalyzer('dimuonNtuplizer',
     nameOfOutput = cms.string('output.root'),
     isData = cms.bool(True),

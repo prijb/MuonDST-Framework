@@ -14,6 +14,7 @@ class helper:
         else:
             self.redirector = None
         print("Using helper to access the files:")
+        print("  > Central: ", central)
         print("  > Redirector: %s"%(redirector))
         print("  > Looking in: %s"%(input))
 

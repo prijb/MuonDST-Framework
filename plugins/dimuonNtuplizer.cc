@@ -7,6 +7,7 @@
 #include "FWCore/Framework/interface/ConsumesCollector.h"
 
 #include "SimDataFormats/GeneratorProducts/interface/HepMCProduct.h"
+#include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
 
 #include "DataFormats/Common/interface/Handle.h"
 #include "DataFormats/PatCandidates/interface/Muon.h"
@@ -73,6 +74,9 @@ class dimuonNtuplizer : public edm::one::EDAnalyzer<edm::one::SharedResources>  
       edm::EDGetTokenT<edm::View<pat::TriggerObjectStandAlone> > triggerObjects_;
       edm::EDGetTokenT<pat::PackedTriggerPrescales>  triggerPrescales_;
 
+      // MC
+      edm::EDGetTokenT<GenEventInfoProduct>  theGenEventInfoProduct;
+      edm::Handle<GenEventInfoProduct> genEvtInfo;
       // "hltScoutingPrimaryVertexPacker" (Updated)
       edm::EDGetTokenT<edm::View<Run3ScoutingVertex> > pvToken;
       edm::Handle<edm::View<Run3ScoutingVertex> > pvs;
@@ -111,6 +115,9 @@ class dimuonNtuplizer : public edm::one::EDAnalyzer<edm::one::SharedResources>  
       Int_t lumiBlock = 0;
       Int_t run = 0;
 
+      // MC
+      Float_t genWeight = 1.;
+
       // HLT
       TString hltNames[100] = {""};
       Bool_t hltResult[100] = {false};
@@ -131,6 +138,16 @@ class dimuonNtuplizer : public edm::one::EDAnalyzer<edm::one::SharedResources>  
       Float_t MuonVtx_eta[200] = {0.};
       Float_t MuonVtx_phi[200] = {0.};
       Int_t MuonVtx_charge[200] = {0};
+      Int_t MuonVtx_nValidRecoMuonHits[200] = {0};
+      Int_t MuonVtx_nRecoMuonMatchedStations[200] = {0};
+      Int_t MuonVtx_nValidPixelHits[200] = {0};
+      Int_t MuonVtx_type[200] = {0};
+      Int_t MuonVtx_nTrackerLayersWithMeasurement[200] = {0};
+      Float_t MuonVtx_trk_dxy[200] = {0};
+      Float_t MuonVtx_trk_dz[200] = {0};
+      Float_t MuonVtx_trk_chi2[200] = {0};
+      Float_t MuonVtx_trk_ndof[200] = {0};
+      Float_t MuonVtx_normalizedChi2[200] = {0};
       bool MuonVtx_hasSV[200] = {false};
       Int_t MuonVtx_bestSV[200] = {0};
 
@@ -167,6 +184,7 @@ class dimuonNtuplizer : public edm::one::EDAnalyzer<edm::one::SharedResources>  
       //
       std::string output_filename;
       TH1F *counts;
+      TH1F *sum2Weights;
       TFile *file_out;
       TTree *tree_out;
 
@@ -184,6 +202,12 @@ dimuonNtuplizer::dimuonNtuplizer(const edm::ParameterSet& iConfig) :
 
    parameters = iConfig;
 
+   isData = parameters.getParameter<bool>("isData");
+   is2024 = parameters.getParameter<bool>("is2024");
+
+   if (!isData)
+     theGenEventInfoProduct = consumes<GenEventInfoProduct> (parameters.getParameter<edm::InputTag>("EventInfo"));
+
    vtriggerSelector_.reserve(vtriggerSelection_.size());
    for (auto const& vt:vtriggerSelection_) vtriggerSelector_.push_back(triggerExpression::parse(vt));
    for (unsigned int i = 0; i < l1Seeds_.size(); i++){
@@ -199,8 +223,6 @@ dimuonNtuplizer::dimuonNtuplizer(const edm::ParameterSet& iConfig) :
      l1Names[i] = TString(l1seed);
    }
 
-   isData = parameters.getParameter<bool>("isData");
-   is2024 = parameters.getParameter<bool>("is2024");
    pvToken = consumes<edm::View<Run3ScoutingVertex> >  (parameters.getParameter<edm::InputTag>("primaryVertexPacker"));
    muonsNoVtxToken = consumes<edm::View<Run3ScoutingMuon> >  (parameters.getParameter<edm::InputTag>("muonPackerNoVtx"));
    svsNoVtxToken = consumes<edm::View<Run3ScoutingVertex> >  (parameters.getParameter<edm::InputTag>("svPackerNoVtx"));
@@ -210,6 +232,7 @@ dimuonNtuplizer::dimuonNtuplizer(const edm::ParameterSet& iConfig) :
    }
 
    counts = new TH1F("counts", "", 1, 0, 1);
+   sum2Weights = new TH1F("sum2Weights", "", 1, 0, 1);
 }
 
 
@@ -237,15 +260,17 @@ void dimuonNtuplizer::beginJob() {
    tree_out->Branch("lumiBlock", &lumiBlock, "lumiBlock/I");
    tree_out->Branch("run", &run, "run/I");
 
+   tree_out->Branch("genWeight", &genWeight, "genWeight/F");
+
    for (unsigned int iHLT=0; iHLT<vtriggerAlias_.size(); ++iHLT) {
      std::cout << hltNames[iHLT] << std::endl;
      tree_out->Branch(TString(vtriggerAlias_[iHLT]), &hltResult[iHLT]);
    }
 
-   for (unsigned int iL1=0; iL1<l1Seeds_.size(); ++iL1) {
-     tree_out->Branch(TString(l1Names[iL1]), &l1Result[iL1]);
-     std::cout << l1Names[iL1] << std::endl;
-   }
+   //for (unsigned int iL1=0; iL1<l1Seeds_.size(); ++iL1) {
+   //  tree_out->Branch(TString(l1Names[iL1]), &l1Result[iL1]);
+   //  std::cout << l1Names[iL1] << std::endl;
+   //}
 
    tree_out->Branch("nPV", &nPV, "nPV/I");
    tree_out->Branch("PV_x", &PV_x, "PV_x/I");
@@ -257,8 +282,18 @@ void dimuonNtuplizer::beginJob() {
    tree_out->Branch("MuonVtx_eta", MuonVtx_eta, "MuonVtx_eta[nMuonVtx]/F");
    tree_out->Branch("MuonVtx_phi", MuonVtx_phi, "MuonVtx_phi[nMuonVtx]/F");
    tree_out->Branch("MuonVtx_charge", MuonVtx_charge, "MuonVtx_charge[nMuonVtx]/I");
-   tree_out->Branch("MuonVtx_hasSV", MuonVtx_hasSV, "MuonVtx_hasSV[nMuonVtx]/I");
-   tree_out->Branch("MuonVtx_bestSV", MuonVtx_bestSV, "MuonVtx_bestSV[nMuonVtx]/I");
+   tree_out->Branch("MuonVtx_type", MuonVtx_type, "MuonVtx_type[nMuonVtx]/I");
+   tree_out->Branch("MuonVtx_nValidRecoMuonHits", MuonVtx_nValidRecoMuonHits, "MuonVtx_nValidRecoMuonHits[nMuonVtx]/I");
+   tree_out->Branch("MuonVtx_nRecoMuonMatchedStations", MuonVtx_nRecoMuonMatchedStations, "MuonVtx_nRecoMuonMatchedStations[nMuonVtx]/I");
+   tree_out->Branch("MuonVtx_nValidPixelHits", MuonVtx_nValidPixelHits, "MuonVtx_nValidPixelHits[nMuonVtx]/I");
+   tree_out->Branch("MuonVtx_nTrackerLayersWithMeasurement", MuonVtx_nTrackerLayersWithMeasurement, "MuonVtx_nTrackerLayersWithMeasurement[nMuonVtx]/I");
+   tree_out->Branch("MuonVtx_trk_dxy", MuonVtx_trk_dxy, "MuonVtx_trk_dxy[nMuonVtx]/F");
+   tree_out->Branch("MuonVtx_trk_dz", MuonVtx_trk_dz, "MuonVtx_trk_dz[nMuonVtx]/F");
+   tree_out->Branch("MuonVtx_trk_chi2", MuonVtx_trk_chi2, "MuonVtx_trk_chi2[nMuonVtx]/F");
+   tree_out->Branch("MuonVtx_trk_ndof", MuonVtx_trk_ndof, "MuonVtx_trk_ndof[nMuonVtx]/F");
+   tree_out->Branch("MuonVtx_normalizedChi2", MuonVtx_normalizedChi2, "MuonVtx_normalizedChi2[nMuonVtx]/F");
+   //tree_out->Branch("MuonVtx_hasSV", MuonVtx_hasSV, "MuonVtx_hasSV[nMuonVtx]/I");
+   //tree_out->Branch("MuonVtx_bestSV", MuonVtx_bestSV, "MuonVtx_bestSV[nMuonVtx]/I");
 
    tree_out->Branch("nMuonNoVtx", &nMuonNoVtx, "nMuonNoVtx/I");
    tree_out->Branch("MuonNoVtx_pt", MuonNoVtx_pt, "MuonNoVtx_pt[nMuonNoVtx]/F");
@@ -295,6 +330,7 @@ void dimuonNtuplizer::endJob()
     file_out->cd();
     tree_out->Write();
     counts->Write();
+    sum2Weights->Write();
     file_out->Close();
 
 }
@@ -319,6 +355,8 @@ void dimuonNtuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& i
      iEvent.getByToken(muonsVtxToken, muonsVtx);
      iEvent.getByToken(svsVtxToken, svsVtx);
    }
+   if (!isData)
+     iEvent.getByToken(theGenEventInfoProduct, genEvtInfo);
 
    // Count number of events read
    counts->Fill(0);
@@ -327,6 +365,12 @@ void dimuonNtuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& i
    event = iEvent.id().event();
    lumiBlock = iEvent.id().luminosityBlock();
    run = iEvent.id().run();
+
+   // MC gen information
+   if (!isData){
+       genWeight = (float) genEvtInfo->weight();
+       sum2Weights->Fill(0.5, genWeight*genWeight);
+   }
 
 
    // -> HLT
@@ -350,25 +394,30 @@ void dimuonNtuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& i
    if (!passHLT)
      return;
 
-   // -> L1 seeds
-   bool passL1 = false;
-   l1GtUtils_->retrieveL1(iEvent, iSetup, algToken_);
-   for (unsigned int i = 0; i < l1Seeds_.size(); i++){
-     const auto& l1seed(l1Seeds_.at(i));
-     bool l1htbit = 0;
-     double prescale = -1;
-     l1GtUtils_->getFinalDecisionByName(l1seed, l1htbit);
-     l1GtUtils_->getPrescaleByName(l1seed, prescale);
-     l1Result[i] = l1htbit;
-     l1Prescale[i] = prescale;
-     if (l1htbit)
-       passL1 = true;
-     //std::cout << l1seed << " " << l1htbit << " " << prescale << std::endl;
-   }
+   std::cout << "Pasa el HLT selection" << std::endl;
+
+   //// -> L1 seeds
+   //bool passL1 = false;
+   //l1GtUtils_->retrieveL1(iEvent, iSetup, algToken_);
+   //for (unsigned int i = 0; i < l1Seeds_.size(); i++){
+   //  const auto& l1seed(l1Seeds_.at(i));
+   //  bool l1htbit = 0;
+   //  double prescale = -1;
+   //  l1GtUtils_->getFinalDecisionByName(l1seed, l1htbit);
+   //  l1GtUtils_->getPrescaleByName(l1seed, prescale);
+   //  l1Result[i] = l1htbit;
+   //  l1Prescale[i] = prescale;
+   //  if (l1htbit)
+   //    passL1 = true;
+   //  //std::cout << l1seed << " " << l1htbit << " " << prescale << std::endl;
+   //}
+   bool passL1=true;
 
    if (!passL1)
      return;
    
+   std::cout << "Pasa el L1 selection" << std::endl;
+
    //
    // PV vertex
    //
@@ -457,6 +506,16 @@ void dimuonNtuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& i
        MuonVtx_eta[nMuonVtx] = muon.eta();
        MuonVtx_phi[nMuonVtx] = muon.phi();
        MuonVtx_charge[nMuonVtx] = muon.charge();
+       MuonVtx_type[nMuonVtx] = muon.type();
+       MuonVtx_nValidRecoMuonHits[nMuonVtx] = muon.nValidRecoMuonHits();
+       MuonVtx_nRecoMuonMatchedStations[nMuonVtx] = muon.nRecoMuonMatchedStations();
+       MuonVtx_nValidPixelHits[nMuonVtx] = muon.nValidPixelHits();
+       MuonVtx_nTrackerLayersWithMeasurement[nMuonVtx] = muon.nTrackerLayersWithMeasurement();
+       MuonVtx_trk_dxy[nMuonVtx] = muon.trk_dxy();
+       MuonVtx_trk_dz[nMuonVtx] = muon.trk_dz();
+       MuonVtx_trk_chi2[nMuonVtx] = muon.trk_chi2();
+       MuonVtx_trk_ndof[nMuonVtx] = muon.trk_ndof();
+       MuonVtx_normalizedChi2[nMuonVtx] = muon.normalizedChi2();
        nMuonVtx++; 
      }
    }
@@ -485,7 +544,8 @@ void dimuonNtuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& i
      nMuonNoVtx++; 
    }
    // -> Fill tree
-   tree_out->Fill();
+   if (nMuonVtx > 1)
+       tree_out->Fill();
 
 }
 
