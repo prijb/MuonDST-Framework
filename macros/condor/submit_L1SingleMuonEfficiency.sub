@@ -1,0 +1,49 @@
+universe        = vanilla
+executable      = condor/run_L1SingleMuonEfficiency.sh
+output          = logs_L1SingleMuonEfficiency/job.$(ClusterId).$(ProcId).out
+error           = logs_L1SingleMuonEfficiency/job.$(ClusterId).$(ProcId).err
+log             = logs_L1SingleMuonEfficiency/job.$(ClusterId).$(ProcId).log
++JobFlavour = "workday"
+
+#RequestCpus   = 2
+#RequestMemory = 8000
+getenv = True
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+transfer_input_files = $ENV(X509_USER_PROXY)
+x509userproxy=$ENV(X509_USER_PROXY)
+use_x509userproxy = True
+JobBatchName = "SCOUT_efficiency_L1_SingleMu11"
+
+queue arguments from (
+--inDir $ENV(INDIR) -s 0 -n 50 
+--inDir $ENV(INDIR) -s 1 -n 50 
+--inDir $ENV(INDIR) -s 2 -n 50 
+--inDir $ENV(INDIR) -s 3 -n 50 
+--inDir $ENV(INDIR) -s 4 -n 50 
+--inDir $ENV(INDIR) -s 5 -n 50 
+--inDir $ENV(INDIR) -s 6 -n 50 
+--inDir $ENV(INDIR) -s 7 -n 50 
+--inDir $ENV(INDIR) -s 8 -n 50 
+--inDir $ENV(INDIR) -s 9 -n 50 
+--inDir $ENV(INDIR) -s 10 -n 50
+--inDir $ENV(INDIR) -s 11 -n 50
+--inDir $ENV(INDIR) -s 12 -n 50
+--inDir $ENV(INDIR) -s 13 -n 50
+--inDir $ENV(INDIR) -s 14 -n 50
+--inDir $ENV(INDIR) -s 15 -n 50
+--inDir $ENV(INDIR) -s 16 -n 50
+--inDir $ENV(INDIR) -s 17 -n 50
+--inDir $ENV(INDIR) -s 18 -n 50
+--inDir $ENV(INDIR) -s 19 -n 50
+--inDir $ENV(INDIR) -s 20 -n 50
+--inDir $ENV(INDIR) -s 21 -n 50
+--inDir $ENV(INDIR) -s 22 -n 50
+--inDir $ENV(INDIR) -s 23 -n 50
+--inDir $ENV(INDIR) -s 24 -n 50
+--inDir $ENV(INDIR) -s 25 -n 50
+--inDir $ENV(INDIR) -s 26 -n 50
+--inDir $ENV(INDIR) -s 27 -n 50
+--inDir $ENV(INDIR) -s 28 -n 50
+--inDir $ENV(INDIR) -s 29 -n 50
+)
