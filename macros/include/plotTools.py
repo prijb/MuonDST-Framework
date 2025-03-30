@@ -762,6 +762,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 colors = [ 'tab:'+c for c in ['blue', 'orange', 'green', 'red', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan']]
+colors = ['#3f90da', '#ffa90e', '#bd1f01', '#94a4a2']
 
 def getValues(histo):
     values = []
@@ -820,36 +821,53 @@ def getEfficiencyValues(eff):
         points.append(histo.GetBinLowEdge(n) + 0.5*histo.GetBinWidth(n))
     return np.array(values), np.array(points), np.array(lowerr), np.array(uperr)
 
-def plotEfficiencyHEP(name, efficiency, output, label, xaxis = '', yaxis='', ylog = False, rebin = False):
+def plotEfficiencyHEP(name, efficiency, output, label, xaxis = '', yaxis='', ylog = False, rebin = False, text=''):
     plt.style.use(hep.style.CMS)
     fig, ax = plt.subplots(figsize=(10, 8))
     hep.cms.label("Preliminary", data=True, year='2024', com='13.6', ax=ax)
     ax.set_xlabel(xaxis, fontsize=24)
     ax.set_ylabel(yaxis, fontsize=24)
     ax.set_ylim(0.0, 1.2)
+    ax.text(0.05, 0.85, text, fontsize=16, ha='center', color='k', transform=ax.transAxes)
     es_, ps_, ls_, us_ = getEfficiencyValues(efficiency)
+    for i in range(0, len(es_)):
+        if es_[i]==0. and us_[i]==1.:
+            us_[i] = 0.0
     ax.errorbar(ps_, es_, yerr=[ls_,us_], xerr=0.5*(ps_[1]-ps_[0]), fmt='o', capsize=5, label=label, color='tab:blue', markersize=8)
+    ax.set_xlim(ps_[0] - 0.5*(ps_[1]- ps_[0]), ps_[-1] + 0.5*(ps_[-1]- ps_[-2]))
     ax.legend(loc='upper left', fontsize = 18, frameon = True, ncol=1)
     fig.savefig('%s/%s.png'%(output,name), dpi=140)
 
-def plotEfficiencyComparisonHEP(name, efficiencies, output, labels, xaxis = '', yaxis='', ylog = False, rebin = False):
+def plotEfficiencyComparisonHEP(name, efficiencies, output, labels, xaxis = '', yaxis='', ylog = False, rebin = False, ratio=True):
     plt.style.use(hep.style.CMS)
-    fig, (ax, ax_ratio) = plt.subplots(2, 1, gridspec_kw={'height_ratios': [4, 1], 'hspace': 0.05}, sharex=True, figsize=(10, 10))
+    if ratio:
+        fig, (ax, ax_ratio) = plt.subplots(2, 1, gridspec_kw={'height_ratios': [4, 1], 'hspace': 0.05}, sharex=True, figsize=(10, 10))
+    else:
+        fig, ax = plt.subplots(figsize=(10, 8))
     hep.cms.label("Preliminary", data=False, year='2024', com='13.6', ax=ax)
     ax.set_xlabel('')
-    ax_ratio.set_xlabel(xaxis, fontsize=24)
     ax.set_ylabel(yaxis, fontsize=24)
-    ax_ratio.set_ylabel('Ratio', fontsize=24)
+    if ratio:
+        ax_ratio.set_xlabel(xaxis, fontsize=24)
+        ax_ratio.set_ylabel('Ratio', fontsize=24)
     ax.set_ylim(0.0, 1.2)
     es0_, ps0_, ls0_, us0_ = getEfficiencyValues(efficiencies[0])
+    for i in range(0, len(es0_)):
+        if es0_[i]==0. and us0_[i]==1.:
+            us0_[i] = 0.0
+    ax.set_xlim(ps0_[0] - 0.5*(ps0_[1]- ps0_[0]), ps0_[-1] + 0.5*(ps0_[-1]- ps0_[-2]))
     for e,eff in enumerate(efficiencies):
         es_, ps_, ls_, us_ = getEfficiencyValues(eff)
+        for i in range(0, len(es_)):
+            if es_[i]==0. and us_[i]==1.:
+                us_[i] = 0.0
         ax.errorbar(ps_, es_, yerr=[ls_,us_], xerr=0.5*(ps_[1]-ps_[0]), fmt='o', capsize=5, label=labels[e], color=colors[e], markersize=8)
         if e>0 and e==1:
             err0 = [ls0_[x] if es0_[x] > es_[x] else us0_[x] for x in range(0, len(es0_))]
             err1 = [ls_[x] if es_[x] > es0_[x] else us_[x] for x in range(0, len(es_))]
             err = es_/es0_*((err0/es0_)**2 + (err1/es_)**2)
-            ax_ratio.errorbar(ps_, es_/es0_, yerr=err, xerr=0.5*(ps_[1]-ps_[0]), fmt='o', capsize=5, label=labels[e], color='k', markersize=8)
+            if ratio:
+                ax_ratio.errorbar(ps_, es_/es0_, yerr=err, xerr=0.5*(ps_[1]-ps_[0]), fmt='o', capsize=5, label=labels[e], color='k', markersize=8)
     ax.legend(loc='upper left', fontsize = 18, frameon = True, ncol=1)
     fig.savefig('%s/%s_fit.png'%(output,name), dpi=140)
     
@@ -939,7 +957,7 @@ def plotEfficiency2D(name, efficiency, label, output, xaxis = '', yaxis='', year
                 sval = '%.2f'%(val)
                 text = ax.text(x_edges[i] + 0.5*(x_edges[i+1]-x_edges[i]), x_edges[j] + 0.5*(x_edges[j+1]-x_edges[j]), sval, ha="center", va="center", color="w", fontsize=8)
                 print(x_edges[i] + 0.5*(x_edges[i+1]-x_edges[i]), x_edges[j] + 0.5*(x_edges[j+1]-x_edges[j]))
-    hep.cms.label("Preliminary", data=False, year=year, com='13.6', fontsize=18)
+    hep.cms.label("Preliminary", data=True, year=year, com='13.6', fontsize=18)
     ax.set_xlabel(xaxis, fontsize=18, labelpad=10)
     ax.set_ylabel(yaxis, fontsize=18, labelpad=10)
     ax.tick_params(axis='both', which='major', labelsize=14, width=1.5)  # Ticks principales

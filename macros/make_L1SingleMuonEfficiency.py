@@ -166,6 +166,7 @@ if __name__ == "__main__":
         ## Get passed rdf:
         rdf_den = rdf
         rdf_num = rdf.Filter("L1_SingleMu11_SQ14_BMTF")
+        rdf_num_HLT = rdf.Filter("DST_PFScouting_SingleMuon == 1")
         print(f' > RDataFrame with {rdf.Count().GetValue()} entries passing L1_SingleMu11_SQ14_BMTF')
 
         ### Filling
@@ -180,6 +181,7 @@ if __name__ == "__main__":
         #
         histos.append(rdf_den.Histo1D(("probe_pt_denominator", r'; Leading muon $p_{T}$ (GeV); Number of events', len(np.array(pt_bins))-1, np.array(pt_bins)), "probe_pt"))
         histos.append(rdf_num.Histo1D(("probe_pt_numerator", r'; Leading muon $p_{T}$ (GeV); Number of events', len(np.array(pt_bins))-1, np.array(pt_bins)), "probe_pt"))
+        histos.append(rdf_num.Histo1D(("probe_pt_numerator_hlt", r'; Leading muon $p_{T}$ (GeV); Number of events', len(np.array(pt_bins))-1, np.array(pt_bins)), "probe_pt"))
 
     else:
         ## Definitions

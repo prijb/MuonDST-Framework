@@ -7,6 +7,6 @@ indir=$1
 
 export INDIR=${indir}
 
-mkdir logs_L1SingleMuonEfficiency
+mkdir logs_L1DoubleMuonEfficiency
 #rm logs_L1SingleMuonEfficiency/*
-condor_submit condor/submit_L1SingleMuonEfficiency.sub 
+condor_submit condor/submit_L1DoubleMuonEfficiency.sub 

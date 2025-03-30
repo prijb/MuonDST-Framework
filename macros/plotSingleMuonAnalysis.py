@@ -11,7 +11,7 @@ if __name__ == "__main__":
     r.setTDRStyle()
     r.gStyle.SetPadRightMargin(0.12)
 
-    filename = '/eos/user/f/fernance/DST-Muons/ScoutingOutput_efficiencies/output_0.root'
+    filename = '/eos/user/f/fernance/DST-Muons/ScoutingOutput_efficiencies/output_all.root'
 
     ## Plot histograms
     den_probe_pt = getObject(filename, 'probe_pt_denominator')
