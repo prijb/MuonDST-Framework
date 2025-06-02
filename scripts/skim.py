@@ -55,7 +55,8 @@ class Skimmer:
         kept = {}
         for file in self.in_file:
             print("Analyzing file: ", file)
-            open_file = uproot.open(file)
+            os.system(f"xrdcp {file} .")
+            open_file = uproot.open(file.split('/')[-1])
             in_tree = open_file["Events"]
             branches = in_tree.keys()
             print(f"""Initial number of events: {len(in_tree["run"].array())}""")
@@ -101,6 +102,7 @@ class Skimmer:
                     kept[b] = ak.concatenate([kept[b], to_keep[b]])
 
             print(f"""Skimmed number of events: {len(to_keep["run"])}""")
+            os.system(f"rm {file.split('/')[-1]}")
 
         print("Printing out objects/variables to keep")
         for k, b in to_keep.items():

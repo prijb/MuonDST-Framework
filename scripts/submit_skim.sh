@@ -10,4 +10,4 @@ export DATASET=${dataset}
 export INPUT=${input}
 
 mkdir logs_skim
-condor_submit condor/submit_skim.sub 
+condor_submit scripts/submit_skim.sub 

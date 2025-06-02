@@ -1,5 +1,5 @@
 universe        = vanilla
-executable      = condor/run_skim.sh
+executable      = scripts/run_skim.sh
 output          = logs_skim/job.$(ClusterId).$(ProcId).out
 error           = logs_skim/job.$(ClusterId).$(ProcId).err
 log             = logs_skim/job.$(ClusterId).$(ProcId).log
