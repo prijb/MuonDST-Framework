@@ -30,7 +30,7 @@ class helper:
                 if '.root' in f:
                     filename = '%s/'%(self.redirector)+f[:-1] if self.isCentral else '%s:/'%(self.redirector)+f[:-1]
                     files.append(filename)
-        os.system('rm temp.txt')
+        #os.system('rm temp.txt')
         print("Found files:")
         print(files)
         return files

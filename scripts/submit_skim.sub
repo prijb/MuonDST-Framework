@@ -1,0 +1,186 @@
+universe        = vanilla
+executable      = condor/run_skim.sh
+output          = logs_skim/job.$(ClusterId).$(ProcId).out
+error           = logs_skim/job.$(ClusterId).$(ProcId).err
+log             = logs_skim/job.$(ClusterId).$(ProcId).log
++JobFlavour = "tomorrow"
+
+#RequestCpus   = 2
+#RequestMemory = 8000
+getenv = True
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+transfer_input_files = $ENV(X509_USER_PROXY)
+x509userproxy=$ENV(X509_USER_PROXY)
+use_x509userproxy = True
+JobBatchName = "SCOUT_skim"
+
+queue arguments from (
+--dataset $ENV(DATASET) -s 0 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov 
+--dataset $ENV(DATASET) -s 1 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov 
+--dataset $ENV(DATASET) -s 2 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov 
+--dataset $ENV(DATASET) -s 3 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov 
+--dataset $ENV(DATASET) -s 4 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov 
+--dataset $ENV(DATASET) -s 5 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov 
+--dataset $ENV(DATASET) -s 6 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov 
+--dataset $ENV(DATASET) -s 7 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov 
+--dataset $ENV(DATASET) -s 8 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov 
+--dataset $ENV(DATASET) -s 9 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov 
+--dataset $ENV(DATASET) -s 10 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 11 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 12 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 13 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 14 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 15 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 16 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 17 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 18 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 19 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 20 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 21 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 22 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 23 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 24 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 25 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 26 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 27 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 28 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 29 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 31 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 32 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 33 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 34 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 35 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 36 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 37 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 38 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 39 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 40 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 41 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 42 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 43 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 44 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 45 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 46 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 47 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 48 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 49 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 50 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 51 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 52 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 53 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 54 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 55 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 56 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 57 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 58 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 59 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 60 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 61 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 62 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 63 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 64 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 65 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 66 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 67 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 68 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 69 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 70 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 71 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 72 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 73 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 74 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 75 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 76 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 77 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 78 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 79 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 80 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 81 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 82 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 83 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 84 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 85 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 86 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 87 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 88 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 89 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 90 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 91 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 92 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 93 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 94 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 95 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 96 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 97 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 98 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 99 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 100 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 101 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 102 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 103 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 104 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 105 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 106 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 107 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 108 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 109 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 110 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 111 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 112 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 113 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 114 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 115 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 116 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 117 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 118 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 119 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 120 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 121 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 122 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 123 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 124 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 125 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 126 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 127 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 128 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 129 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 130 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 131 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 132 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 133 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 134 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 135 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 136 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 137 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 138 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 139 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 140 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 141 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 142 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 143 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 144 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 145 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 146 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 147 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 148 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 149 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 150 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 151 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 152 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 153 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 154 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 155 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 156 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 157 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 158 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 159 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 160 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 161 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 162 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 163 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 164 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 165 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 166 -n 10 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+--dataset $ENV(DATASET) -s 167 -n 6 --input $ENV(INPUT) --redirector root://cmsxrootd.fnal.gov
+)
