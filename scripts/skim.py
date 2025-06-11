@@ -55,7 +55,8 @@ class Skimmer:
         kept = {}
         for file in self.in_file:
             print("Analyzing file: ", file)
-            os.system(f"xrdcp {file} .")
+            file_ = file.replace('\n','')
+            os.system(f"xrdcp {file_} .")
             open_file = uproot.open(file.split('/')[-1])
             in_tree = open_file["Events"]
             branches = in_tree.keys()
@@ -116,6 +117,7 @@ if __name__ == "__main__":
     parser.add_option('--dataset', action='store', type=str,  dest='dataset', default='', help='Input dataset')
     parser.add_option('--redirector', action='store', type=str,  dest='redirector', default='root://xrootd-cms.infn.it', help='Redirector to use to access the samples')
     parser.add_option('--input', action='store', type=str,  dest='input', default='', help='List of files')
+    parser.add_option('--json', action='store', type=str,  dest='json', default='', help='List of files')
     parser.add_option('-s', '--step', action='store', type=int,  dest='step', default=0, help='Step file')
     parser.add_option('-n', '--number', action='store', type=int,  dest='number', default=0, help='Number of files for given step')
     (opts, args) = parser.parse_args()
@@ -125,6 +127,7 @@ if __name__ == "__main__":
     step = opts.step
     number = opts.number
     input_file = opts.input
+    json_file = opts.json
 
     if input_file=='':
         help = helper(dataset, True, redirector)
@@ -136,8 +139,11 @@ if __name__ == "__main__":
                 files = files[step*number:number*(step+1)]
     print(f"We have {len(files)} files to read")
 
-    golden_file="/eos/user/c/cmsdqm/www/CAF/certification/Collisions25/DCSOnly_JSONS/dailyDCSOnlyJSON/Collisions25_13p6TeV_Latest.json"
+    if '2024' in json_file:
+        golden_file="/eos/user/c/cmsdqm/www/CAF/certification/Collisions24/DCSOnly_JSONS/dailyDCSOnlyJSON/Collisions24_13p6TeV_Latest.json"
+    else:
+        golden_file="/eos/user/c/cmsdqm/www/CAF/certification/Collisions25/DCSOnly_JSONS/dailyDCSOnlyJSON/Collisions25_13p6TeV_Latest.json"
 
-    Skimmer(in_file=files, index=opts.step, golden_json=golden_file)
+    Skimmer(json_file=json_file, in_file=files, index=opts.step, golden_json=golden_file)
 
 
