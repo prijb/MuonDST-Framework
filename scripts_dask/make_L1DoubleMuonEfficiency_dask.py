@@ -25,7 +25,6 @@ from coffea.dataset_tools import (
 
 import dask
 from dask.distributed import Client, LocalCluster
-from dask_iclx import ICCluster
 import socket
 
 import dask_awkward as dak
@@ -66,9 +65,9 @@ class L1DoubleMuonEfficiencyProcessor(processor.ProcessorABC):
 
         # Trigger efficiency histograms
         trigger_axis = hist.axis.StrCategory([], growth=True, name="trigger", label="Trigger")
-        pt_axis = hist.axis.Regular(100, 0, 50, name="pt", label="Probe $p_T$ (GeV)")
+        #pt_axis = hist.axis.Regular(100, 0, 50, name="pt", label="Probe $p_T$ (GeV)")
+        pt_axis = hist.axis.Variable([0, 1, 2, 3, 4, 5, 7, 9, 11, 13, 15, 20, 30, 40, 50], name="pt", label="Probe $p_T$ (GeV)")
         mass_axis = hist.axis.Regular(30, 2.8, 3.4, name="mass", label="Dimuon Mass (GeV)")
-
         h_trigger_pt_den = hda.hist.Hist(trigger_axis, pt_axis, storage="weight", label="Counts")
         h_trigger_pt_num = hda.hist.Hist(trigger_axis, pt_axis, storage="weight", label="Counts")
         h_trigger_mass_den = hda.hist.Hist(trigger_axis, mass_axis, storage="weight", label="Counts")
@@ -91,9 +90,8 @@ class L1DoubleMuonEfficiencyProcessor(processor.ProcessorABC):
         h_cutflow.fill(cutflow="num_events_orthogonal", cutflow_count=ak.ones_like(events["DST"]["PFScouting_DoubleMuon"])*0)
 
         # Pre-filter to have exactly 2 OS muons 
-        events = events[ak.num(events[muon_collection_key]) == 2]
+        events = events[ak.num(events[muon_collection_key]) >= 2]
         events = events[events[muon_collection_key, "charge"][:, 0] * events[muon_collection_key, "charge"][:, 1] < 0]
-        h_cutflow.fill(cutflow="num_events_prefilter", cutflow_count=ak.ones_like(events["DST"]["PFScouting_DoubleMuon"])*0)
 
         # Tag and probe muons
         tag_muon_mask = events[muon_collection_key, "pt"][:, 0] > events[muon_collection_key, "pt"][:, 1]
@@ -101,18 +99,34 @@ class L1DoubleMuonEfficiencyProcessor(processor.ProcessorABC):
         tag_record = {}
         probe_record = {}
 
-        vars = ["pt", "eta", "phi", "trk_dxy", "trk_dxyError", "charge"]
+        vars = ["pt", "eta", "phi", "trk_dxy", "trk_dxyError", "trk_chi2", "trk_ndof", "charge"]
         for var in vars:
             tag_record[var] = events[muon_collection_key, var][:, 0]*tag_muon_mask + events[muon_collection_key, var][:, 1]*(~tag_muon_mask)
             probe_record[var] = events[muon_collection_key, var][:, 0]*(~tag_muon_mask) + events[muon_collection_key, var][:, 1]*(tag_muon_mask)
-        tag_record["absdxy"] = np.abs(tag_record["trk_dxy"])
-        probe_record["absdxy"] = np.abs(probe_record["trk_dxy"])
+        tag_record["trk_absdxy"] = np.abs(tag_record["trk_dxy"])
+        probe_record["trk_absdxy"] = np.abs(probe_record["trk_dxy"])
         tag_record["mass"] = ak.ones_like(tag_record["pt"]) * 0.105658
-        probe_record["mass"] = ak.ones_like(probe_record["pt"]) * 0.105658
+        probe_record["mass"] = ak.ones_like(probe_record["pt"]) * 0.
+        tag_record["trk_chi2_over_ndof"] = tag_record["trk_chi2"] / tag_record["trk_ndof"]
+        probe_record["trk_chi2_over_ndof"] = probe_record["trk_chi2"] / probe_record["trk_ndof"]
 
         tag = ak.zip(tag_record, with_name="PtEtaPhiMCandidate", behavior=candidate.behavior)
         probe = ak.zip(probe_record, with_name="PtEtaPhiMCandidate", behavior=candidate.behavior)
         dimuon = tag + probe
+
+        # Apply pT, eta, chi2 and dR cuts
+        pt_cut = (tag.pt > 2.0) & (probe.pt > 2.0)
+        eta_cut = (np.abs(tag.eta) < 2.4) & (np.abs(probe.eta) < 2.4)
+        chi2_cut = (tag.trk_chi2_over_ndof < 3.0) & (probe.trk_chi2_over_ndof < 3.0)
+        dr = tag.delta_r(probe)
+        dr_cut = (dr > 0.1)
+        overall_cut = pt_cut & eta_cut & chi2_cut & dr_cut
+        tag = tag[overall_cut]
+        probe = probe[overall_cut]
+        dimuon = dimuon[overall_cut]
+        events = events[overall_cut]
+        h_cutflow.fill(cutflow="num_events_prefilter", cutflow_count=ak.ones_like(events["DST"]["PFScouting_DoubleMuon"])*0)
+
 
         if self.selectJpsi:
             # Apply J/Psi selection
@@ -146,7 +160,7 @@ class L1DoubleMuonEfficiencyProcessor(processor.ProcessorABC):
     def postprocess(self, accumulator):
         pass
 
-# Example submission: python3 scripts_dask/make_L1DoubleMuonEfficiency_dask.py --infile files/2024i_files.txt --redirector root://xrootd-cms.infn.it/ --outfile /vols/cms/pb4918/HLTScouting/MuonPOG/MuonScoutingNano/outputs/output.root --useVtx --selectJpsi
+# Example submission: python3 scripts_dask/make_L1DoubleMuonEfficiency_dask.py --infile files/2024i_files.txt --redirector root://xrootd-cms.infn.it/ --outfile /vols/cms/pb4918/HLTScouting/MuonPOG/MuonScoutingNano/outputs/output.root --useVtx --selectJpsi --cluster lx04
 def main():
     parser = argparse.ArgumentParser(description="Coffea processor for L1 Double Muon Efficiency")
     parser.add_argument("--infile", type=str, help="Input file")
@@ -155,6 +169,7 @@ def main():
     parser.add_argument("--hlt", type=str, default="all", help="HLT path to select (default: all)")
     parser.add_argument("--useVtx", action='store_true', help="Use ScoutingMuonVtx collection")
     parser.add_argument("--selectJpsi", action='store_true', help="Select J/Psi candidates")
+    parser.add_argument("--cluster", type=str, choices=['local', 'lxplus', 'lx04'], default='local', help="Cluster type to use (default: local)")
     args = parser.parse_args()
 
     cwd = os.getcwd()
@@ -167,6 +182,7 @@ def main():
     # Change these parameters based on your own proxy location and appropriate port number
     user_proxy_dir = "/vols/cms/pb4918/HLTScouting/MuonPOG/MuonScoutingNano/proxy/cms.proxy"
     log_dir = "/vols/cms/pb4918/HLTScouting/MuonPOG/MuonScoutingNano/logs/dask_logs"
+    #n_port = 8786
     n_port = 60000
     os.makedirs(log_dir, exist_ok=True)
 
@@ -185,7 +201,7 @@ def main():
                 continue
             if redirector is None: infile_name = line
             else: infile_name = f"{redirector}{line}"
-            print(f"Processing file: {infile_name}")
+            #print(f"Processing file: {infile_name}")
             fileset["2024"]["files"][infile_name] = "Events"
 
 
@@ -204,33 +220,68 @@ def main():
         f"export X509_USER_PROXY={user_proxy_dir}",
     ]
 
-    # Dask cluster setup (Note: For Imperial lx machines)
-    cluster = ICCluster(
-        cores = 1,
-        memory = '3000MB',
-        disk = '10GB',
-        death_timeout = '60',
-        lcg = False,
-        nanny = False,
-        container_runtime = 'none',
-        log_directory = '/vols/cms/pb4918/HLTScouting/MuonPOG/MuonScoutingNano/logs/dask_logs',
-        scheduler_options = {
-            'port': 60000,
-            'host': socket.gethostname(),
-            'dashboard_address': ':8787',
-        },
-        job_extra = {
-            "+MaxRuntime": "3600",
-        },
-        name="ClusterName",
-        job_script_prologue=env_extra,
-    ) 
-    cluster.adapt(minimum=0, maximum=100)
-    print(cluster.job_script())
+    # Dask cluster setup
+    if args.cluster == 'local':
+        print("Using local Dask cluster")
+        client = Client()
+    
+    elif args.cluster == 'lxplus':
+        print("Using lxplus Dask cluster")
+        from dask_lxplus import CernCluster
+        cluster =  CernCluster(
+            cores=1,
+            memory='3GB',
+            disk='10GB',
+            death_timeout = '60',
+            lcg = False,
+            nanny = False,
+            container_runtime = "none",
+            log_directory = "/eos/user/p/ppradeep/HLTScouting/MuonPOG/CMSSW_15_0_8/src/MuonDST-Framework/logs",
+            scheduler_options={
+                'port': 8786,
+                'host': socket.gethostname(),
+                },
+            job_extra={
+                '+JobFlavour': '"longlunch"',
+                },
+            extra = ['--worker-port 10000:10100'],
+            python=sys.executable,
+            worker_command="distributed.cli.dask_worker",
+            job_script_prologue=env_extra,
+        )
+        cluster.adapt(minimum=0, maximum=1000)
+        print(cluster.job_script())
+        client = Client(cluster)
 
-    client = Client(cluster)
+    elif args.cluster == 'lx04':
+        print("Using lx04 Dask cluster")
+        from dask_iclx import ICCluster
+        cluster = ICCluster(
+            cores = 1,
+            memory = '3000MB',
+            disk = '10GB',
+            death_timeout = '60',
+            lcg = False,
+            nanny = False,
+            container_runtime = 'none',
+            log_directory = '/vols/cms/pb4918/HLTScouting/MuonPOG/MuonScoutingNano/logs/dask_logs',
+            scheduler_options = {
+                'port': 60000,
+                'host': socket.gethostname(),
+                'dashboard_address': ':8787',
+            },
+            job_extra = {
+                "+MaxRuntime": "7199",
+            },
+            name="ClusterName",
+            job_script_prologue=env_extra,
+        ) 
+        cluster.adapt(minimum=0, maximum=100)
+        print(cluster.job_script())
+        client = Client(cluster)
+
+    # Job execution and monitoring
     print("Dashboard running at", client.dashboard_link)
-
     dataset_runnable, dataset_updated = preprocess(
         fileset,
         step_size=100000,

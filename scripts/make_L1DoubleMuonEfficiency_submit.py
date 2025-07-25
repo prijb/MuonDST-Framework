@@ -1,12 +1,13 @@
 # Parent script which drives submission of make_L1DoubleMuonEfficiency.py across a whole dataset
+# Example submission command: python3 scripts/make_L1DoubleMuonEfficiency_submit.py --input files/2024i_files_full.txt --output outputs/output_vtx_jpsi --redirector root://xrootd-cms.infn.it/ --opts useVtx selectJpsi
 import os
 import time
 import argparse
 
 #Get current directory
 cwd = os.getcwd()
-#current_time = time.strftime("%Y%m%d_%H%M%S")
-current_time = "240725"
+current_time = time.strftime("%Y%m%d_%H%M%S")
+#current_time = "240725"
 
 parser = argparse.ArgumentParser(description="Submit L1DoubleMuonEfficiency jobs")
 parser.add_argument("--input", "-i", type=str, help="Input dataset filelist (text file)")
@@ -56,8 +57,9 @@ with open(input_txt_file, 'r') as f:
             i_file += 1
 
 extra_opts = ""
-for opt in opts:
-    extra_opts += f"--{opt} "
+if opts is not None:
+  for opt in opts:
+      extra_opts += f"--{opt} "
 with open("scripts/make_L1DoubleMuonEfficiency_submit_args.txt", "w") as f:
     for i_file, file_path in enumerate(filelist):
         f.write(f"{file_path} {output_dir}/output_{i_file}.root\n")

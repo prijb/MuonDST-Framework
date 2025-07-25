@@ -50,9 +50,9 @@ class L1DoubleMuonEfficiencyProcessor(processor.ProcessorABC):
 
         # Trigger efficiency histograms
         trigger_axis = hist.axis.StrCategory([], growth=True, name="trigger", label="Trigger")
-        pt_axis = hist.axis.Regular(100, 0, 50, name="pt", label="Probe $p_T$ (GeV)")
+        #pt_axis = hist.axis.Regular(100, 0, 50, name="pt", label="Probe $p_T$ (GeV)")
+        pt_axis = hist.axis.Variable([0, 1, 2, 3, 4, 5, 7, 9, 11, 13, 15, 20, 30, 40, 50], name="pt", label="Probe $p_T$ (GeV)")
         mass_axis = hist.axis.Regular(30, 2.8, 3.4, name="mass", label="Dimuon Mass (GeV)")
-
         h_trigger_pt_den = hda.hist.Hist(trigger_axis, pt_axis, storage="weight", label="Counts")
         h_trigger_pt_num = hda.hist.Hist(trigger_axis, pt_axis, storage="weight", label="Counts")
         h_trigger_mass_den = hda.hist.Hist(trigger_axis, mass_axis, storage="weight", label="Counts")
@@ -75,9 +75,8 @@ class L1DoubleMuonEfficiencyProcessor(processor.ProcessorABC):
         h_cutflow.fill(cutflow="num_events_orthogonal", cutflow_count=ak.ones_like(events["DST"]["PFScouting_DoubleMuon"])*0)
 
         # Pre-filter to have exactly 2 OS muons 
-        events = events[ak.num(events[muon_collection_key]) == 2]
+        events = events[ak.num(events[muon_collection_key]) >= 2]
         events = events[events[muon_collection_key, "charge"][:, 0] * events[muon_collection_key, "charge"][:, 1] < 0]
-        h_cutflow.fill(cutflow="num_events_prefilter", cutflow_count=ak.ones_like(events["DST"]["PFScouting_DoubleMuon"])*0)
 
         # Tag and probe muons
         tag_muon_mask = events[muon_collection_key, "pt"][:, 0] > events[muon_collection_key, "pt"][:, 1]
@@ -85,18 +84,34 @@ class L1DoubleMuonEfficiencyProcessor(processor.ProcessorABC):
         tag_record = {}
         probe_record = {}
 
-        vars = ["pt", "eta", "phi", "trk_dxy", "trk_dxyError", "charge"]
+        vars = ["pt", "eta", "phi", "trk_dxy", "trk_dxyError", "trk_chi2", "trk_ndof", "charge"]
         for var in vars:
             tag_record[var] = events[muon_collection_key, var][:, 0]*tag_muon_mask + events[muon_collection_key, var][:, 1]*(~tag_muon_mask)
             probe_record[var] = events[muon_collection_key, var][:, 0]*(~tag_muon_mask) + events[muon_collection_key, var][:, 1]*(tag_muon_mask)
-        tag_record["absdxy"] = np.abs(tag_record["trk_dxy"])
-        probe_record["absdxy"] = np.abs(probe_record["trk_dxy"])
+        tag_record["trk_absdxy"] = np.abs(tag_record["trk_dxy"])
+        probe_record["trk_absdxy"] = np.abs(probe_record["trk_dxy"])
         tag_record["mass"] = ak.ones_like(tag_record["pt"]) * 0.105658
-        probe_record["mass"] = ak.ones_like(probe_record["pt"]) * 0.105658
+        probe_record["mass"] = ak.ones_like(probe_record["pt"]) * 0.
+        tag_record["trk_chi2_over_ndof"] = tag_record["trk_chi2"] / tag_record["trk_ndof"]
+        probe_record["trk_chi2_over_ndof"] = probe_record["trk_chi2"] / probe_record["trk_ndof"]
 
         tag = ak.zip(tag_record, with_name="PtEtaPhiMCandidate", behavior=candidate.behavior)
         probe = ak.zip(probe_record, with_name="PtEtaPhiMCandidate", behavior=candidate.behavior)
         dimuon = tag + probe
+
+        # Apply pT, eta, chi2 and dR cuts
+        pt_cut = (tag.pt > 2.0) & (probe.pt > 2.0)
+        eta_cut = (np.abs(tag.eta) < 2.4) & (np.abs(probe.eta) < 2.4)
+        chi2_cut = (tag.trk_chi2_over_ndof < 3.0) & (probe.trk_chi2_over_ndof < 3.0)
+        dr = tag.delta_r(probe)
+        dr_cut = (dr > 0.1)
+        overall_cut = pt_cut & eta_cut & chi2_cut & dr_cut
+        tag = tag[overall_cut]
+        probe = probe[overall_cut]
+        dimuon = dimuon[overall_cut]
+        events = events[overall_cut]
+        h_cutflow.fill(cutflow="num_events_prefilter", cutflow_count=ak.ones_like(events["DST"]["PFScouting_DoubleMuon"])*0)
+
 
         if self.selectJpsi:
             # Apply J/Psi selection
