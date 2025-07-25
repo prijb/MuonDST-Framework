@@ -1,0 +1,11 @@
+Universe = vanilla
+Executable = scripts/make_L1DoubleMuonEfficiency_wrapper.sh
+Arguments = $(input_file) $(output_file)
+Log = logs/240725/job_$(Cluster).log
+Output = logs/240725/job_$(Cluster)_$(Process).out
+Error = logs/240725/job_$(Cluster)_$(Process).err
+request_cpus = 1
+request_memory = 4GB
+use_x509userproxy = true
++MaxRuntime = 7199
+Queue input_file, output_file from scripts/make_L1DoubleMuonEfficiency_submit_args.txt

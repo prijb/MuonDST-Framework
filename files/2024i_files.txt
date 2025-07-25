@@ -1,0 +1,10 @@
+/store/data/Run2024I/ScoutingPFRun3/NANOAOD/PromptReco-v2/000/386/694/00000/1126d07c-bc3e-41f7-a7e7-c6c6e24bf826.root
+/store/data/Run2024I/ScoutingPFRun3/NANOAOD/PromptReco-v2/000/386/694/00000/ee30e3b7-6170-45b0-ac38-b3142e2ff790.root
+/store/data/Run2024I/ScoutingPFRun3/NANOAOD/PromptReco-v2/000/386/694/00000/93db99de-96f7-414b-b750-7b4a7bc159ea.root
+/store/data/Run2024I/ScoutingPFRun3/NANOAOD/PromptReco-v2/000/386/694/00000/7ad6b594-287f-41fc-964a-e77181cc7855.root
+/store/data/Run2024I/ScoutingPFRun3/NANOAOD/PromptReco-v2/000/386/694/00000/17684d23-ecda-4cfa-8365-9038acd1ab8c.root
+/store/data/Run2024I/ScoutingPFRun3/NANOAOD/PromptReco-v2/000/386/694/00000/0fa488c6-d3e2-45b9-8287-c09027615145.root
+/store/data/Run2024I/ScoutingPFRun3/NANOAOD/PromptReco-v2/000/386/694/00000/130ad29f-df5e-4dfe-8e47-4261939e5e7b.root
+/store/data/Run2024I/ScoutingPFRun3/NANOAOD/PromptReco-v2/000/386/694/00000/81b0c456-4636-4936-82a8-1ad630b945d5.root
+/store/data/Run2024I/ScoutingPFRun3/NANOAOD/PromptReco-v2/000/386/694/00000/b04689ee-4bb9-4f27-9acc-1baa1558c304.root
+/store/data/Run2024I/ScoutingPFRun3/NANOAOD/PromptReco-v2/000/386/694/00000/6118c818-5b48-48a2-b859-f25ab535c964.root
