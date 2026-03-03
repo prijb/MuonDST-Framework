@@ -326,6 +326,21 @@ def main():
     dask_condor = args.daskcondor
     dask_cluster = args.daskcluster
 
+    # Input is a text file 
+    if (len(infile) == 0) and (".txt" in infile[0]):
+        print(f"{infile} is a text file, searching for files to add to filelist")
+        infile_txt = infile[0]
+        infile = []
+        with open(infile_txt, 'r') as f:
+            for line in f:
+                file_path = line.strip()
+                if file_path:  # Skip empty lines
+                    if args.redirector is not None:
+                        filename_i = f"{args.redirector}{file_path}"
+                    else:
+                        filename_i = file_path
+                    infile.append(filename_i)
+        
     print(f"Processing files: {infile}")
     fileset = {"2025": infile}
 
@@ -346,7 +361,7 @@ def main():
             f"export X509_USER_PROXY=proxy",
         ]
 
-        if args.cluster == 'lxplus':
+        if dask_cluster == 'lxplus':
             print("Using lxplus Dask cluster")
 
             if not check_port(60000):
@@ -381,7 +396,7 @@ def main():
             client = Client(cluster)
             client.wait_for_workers(1)
 
-        elif args.cluster == 'iclx':
+        elif dask_cluster == 'iclx':
             print("Using iclx Dask cluster")
 
             if not check_port(8786):
