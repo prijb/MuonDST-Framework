@@ -1,0 +1,9 @@
+logs/*
+outputs/*
+plots/*
+proxy/*
+scripts/make_submit_args.txt
+scripts/make_submit.submit
+scripts/make_resubmit_args.txt
+scripts/make_resubmit.submit
+scripts/make_wrapper.sh
