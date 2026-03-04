@@ -45,26 +45,36 @@ def check_port(port):
 
 # Processor definition
 class MonitoringProcessor(processor.ProcessorABC):
-    def __init__(self, hltpath=None, prescalel1=False, useVtx=False, resonance_mask=None, lumi_mask=None):
+    def __init__(self, hltpath=None, prescalel1=False, useVtx=False, resonance_mask=None, no_dimuon=False, lumi_mask=None):
         self.hltpath = hltpath.replace("DST_", "")
         self.prescalel1 = prescalel1
         self.useVtx = useVtx
         self.resonance_mask = resonance_mask
+        self.no_dimuon = no_dimuon
 
         # Set unprescaled L1 seeds
-        self.l1_triggers = [
-            "DoubleMu8_SQ",
-            "DoubleMu_15_7",
-            "DoubleMu0_Upt6_SQ_er2p0",
-            "DoubleMu0_Upt7_SQ_er2p0",
-            "DoubleMu0_Upt8_SQ_er2p0",
-            "DoubleMu0_Upt6_IP_Min1_Upt4",
-            "DoubleMu0_Upt15_Upt7",
-            "DoubleMu0er1p4_SQ_OS_dR_Max1p4",
-            "DoubleMu4er2p0_SQ_OS_dR_Max1p6",
-            "DoubleMu4p5_SQ_OS_dR_Max1p2",
-            "DoubleMu4p5er2p0_SQ_OS_Mass_Min7",
-        ]
+        # Prescales set only for muon triggers for now
+        if "DoubleMuon" in self.hltpath:
+            self.l1_triggers = [
+                "DoubleMu8_SQ",
+                "DoubleMu_15_7",
+                "DoubleMu0_Upt6_SQ_er2p0",
+                "DoubleMu0_Upt7_SQ_er2p0",
+                "DoubleMu0_Upt8_SQ_er2p0",
+                "DoubleMu0_Upt6_IP_Min1_Upt4",
+                "DoubleMu0_Upt15_Upt7",
+                "DoubleMu0er1p4_SQ_OS_dR_Max1p4",
+                "DoubleMu4er2p0_SQ_OS_dR_Max1p6",
+                "DoubleMu4p5_SQ_OS_dR_Max1p2",
+                "DoubleMu4p5er2p0_SQ_OS_Mass_Min7",
+            ]
+        elif "SingleMuon" in self.hltpath:
+            self.l1_triggers = [
+                "SingleMu11_SQ14_BMTF",
+                "SingleMu13_SQ14_BMTF",
+            ]
+        else:
+            print(f"No L1 seeds initialised for path {self.hltpath}")
 
         self.muon_collection_key = "ScoutingMuonVtx" if useVtx else "ScoutingMuonNoVtx"
         self.lumi_mask = LumiMask(lumi_mask) if lumi_mask is not None else None
@@ -75,6 +85,7 @@ class MonitoringProcessor(processor.ProcessorABC):
         print(f"Select only unprescaled L1 seeds: {self.prescalel1}")
         print(f"Muon collection: {self.muon_collection_key}")
         if lumi_mask is not None: print(f"Lumi mask applied from {lumi_mask}")
+        print(f"No dimuons: {no_dimuon}")
         if self.resonance_mask is not None: print(f"Selecting muons from resonance: {self.resonance_mask}")
 
     def process(self, events):
@@ -85,6 +96,10 @@ class MonitoringProcessor(processor.ProcessorABC):
             hist.axis.Regular(1, 0, 1, name="cutflow_count", label="Count"), 
             storage="weight", 
             label="Counts"
+        )
+        h_nmuon = hist.Hist(
+            hist.axis.Regular(10, 0, 10, name="nmuon", label="nMuons"),
+            storage="weight"
         )
         # Event quantities
         h_mass = hist.Hist(
@@ -221,19 +236,19 @@ class MonitoringProcessor(processor.ProcessorABC):
         )
 
         # Starting event count
-        h_cutflow.fill(cutflow="num_events", cutflow_count=ak.ones_like(events["Dataset"]["ScoutingPFMonitor"])*0)
+        h_cutflow.fill(cutflow="num_events", cutflow_count=ak.ones_like(events["event"])*0)
 
         # Luminosity mask
         if self.lumi_mask is not None:
             print("Applying luminosity mask...")
             good_lumi_mask = self.lumi_mask(events.run, events.luminosityBlock)
             events = events[good_lumi_mask]
-        h_cutflow.fill(cutflow="num_events_lumi", cutflow_count=ak.ones_like(events["Dataset"]["ScoutingPFMonitor"])*0)
+        h_cutflow.fill(cutflow="num_events_lumi", cutflow_count=ak.ones_like(events["event"])*0)
 
         # Apply HLT selection
         if self.hltpath is not None:
             events = events[events["DST"][self.hltpath]]
-        h_cutflow.fill(cutflow="num_events_hlt", cutflow_count=ak.ones_like(events["Dataset"]["ScoutingPFMonitor"])*0)
+        h_cutflow.fill(cutflow="num_events_hlt", cutflow_count=ak.ones_like(events["event"])*0)
 
         # Apply L1 selection
         if self.prescalel1:
@@ -243,101 +258,127 @@ class MonitoringProcessor(processor.ProcessorABC):
                 else:
                     l1_mask = l1_mask | events["L1"][l1_trigger]
             events = events[l1_mask]
-        h_cutflow.fill(cutflow="num_events_l1", cutflow_count=ak.ones_like(events["Dataset"]["ScoutingPFMonitor"])*0)
+        h_cutflow.fill(cutflow="num_events_l1", cutflow_count=ak.ones_like(events["event"])*0)
 
-        events = events[ak.num(events[muon_collection_key]) >= 2]
-        # Sort the muons
-        muons = events[muon_collection_key]
-        muons_pt_order = ak.argsort(muons.pt, axis=1, ascending=False)
-        muons = muons[muons_pt_order]
-        
-        # Apply basic filters on muons (eta and normchi2) and only save events with at least two muons passing selections
-        eta_filter = np.abs(muons.eta) < 2.4
-        normchi2_filter = muons.normchi2 < 3.0
-        muon_filter = eta_filter & normchi2_filter
-        print(f"Applying basic filters on muons")
-        muons = muons[muon_filter]
-        muon_num_filter = ak.num(muons) >= 2 
-        events = events[muon_num_filter]
-        muons = muons[muon_num_filter]
+        # 
+        if self.no_dimuon:
+            print(f"\nSingle muon selections")
+            events = events[ak.num(events[muon_collection_key]) >= 1]
+            # Sort the muons
+            muons = events[muon_collection_key]
+            muons_pt_order = ak.argsort(muons.pt, axis=1, ascending=False)
+            muons = muons[muons_pt_order]
+            
+            eta_filter = np.abs(muons.eta) < 2.4
+            normchi2_filter = muons.normchi2 < 3.0
+            muon_filter = eta_filter & normchi2_filter
+            print(f"Applying basic filters on muons")
+            muons = muons[muon_filter]
+            muon_num_filter = ak.num(muons) >= 1 
+            events = events[muon_num_filter]
+            muons = muons[muon_num_filter]
+            muons_selected = muons
 
-        # Make dimuon candidates
-        dimuons = ak.combinations(muons, 2, fields=["muon_i", "muon_j"])
-        dimuons_idx = ak.argcombinations(muons, 2, fields=["muon_i", "muon_j"])
-        muon_i, muon_j = ak.unzip(dimuons)
-        # Dimuon selections
-        dimuon_dr_ij = muon_i.delta_r(muon_j)
-        dr_filter = dimuon_dr_ij > 0.1
-        os_filter = muon_i.charge != muon_j.charge
-        dimuon_filter = dr_filter & os_filter
-        dimuons = dimuons[dimuon_filter]
-        dimuons_idx = dimuons_idx[dimuon_filter]
-        muon_i, muon_j = ak.unzip(dimuons)
-        muon_idx_i, muon_idx_j = ak.unzip(dimuons_idx)
-        # Get the first dimuon candidate and stitch their indices together
-        muon_idx_i_leading = ak.firsts(muon_idx_i)
-        muon_idx_j_leading = ak.firsts(muon_idx_j)
-        muon_idx_isnone = ak.is_none(muon_idx_i_leading)
-        muon_idx_i_leading = muon_idx_i_leading[~muon_idx_isnone]
-        muon_idx_j_leading = muon_idx_j_leading[~muon_idx_isnone]
-        events = events[~muon_idx_isnone]
-        muons = muons[~muon_idx_isnone]
-
-        # Selected muons
-        muons_to_select = ak.concatenate([ak.singletons(muon_idx_i_leading), ak.singletons(muon_idx_j_leading)], axis=1)
-        local_idx = ak.local_index(muons, axis=1)
-        select_mask = ((local_idx == muon_idx_i_leading[:, None]) | (local_idx == muon_idx_j_leading[:, None]))
-        muons_selected = muons[select_mask]
-
-        h_cutflow.fill(cutflow="num_events_selection", cutflow_count=ak.ones_like(events["Dataset"]["ScoutingPFMonitor"])*0)
-        
-        # Remake the dimuon system and apply a resonance selection if needed
-        dimuons = muons_selected[:, 0] + muons_selected[:, 1]
-        h_mass.fill(mass=dimuons.mass)
-        h_mass_Z.fill(mass=dimuons.mass)
-        h_mass_JPsi.fill(mass=dimuons.mass)
-        h_mass_JPsi_eta.fill(mass=dimuons.mass, eta=dimuons.eta)
-
-        # Apply a resonance selection if required
-        resonance_mask = ak.ones_like(dimuons.mass, dtype=bool)
-        if self.resonance_mask == "kshort":
-            print("Selecting only dimuons in mass range [0.434, 0.49]")
-            resonance_mask = (dimuons.mass > 0.434) & (dimuons.mass < 0.49)
-        elif self.resonance_mask == "eta":
-            print("Selecting only dimuons in mass range [0.527, 0.573]")
-            resonance_mask = (dimuons.mass > 0.527) & (dimuons.mass < 0.573)
-        elif self.resonance_mask == "rho":
-            print("Selecting only dimuons in mass range [0.748, 0.812]")
-            resonance_mask = (dimuons.mass > 0.748) & (dimuons.mass < 0.812)
-        elif self.resonance_mask == "jpsi":
-            print("Selecting only dimuons in mass range [3.0, 3.2]")
-            resonance_mask = (dimuons.mass > 3.0) & (dimuons.mass < 3.2)
-        elif self.resonance_mask == "psi2s":
-            print("Selecting only dimuons in mass range [3.55, 3.805]")
-            resonance_mask = (dimuons.mass > 3.55) & (dimuons.mass < 3.805)
-        elif self.resonance_mask == "upsilon":
-            print("Selecting only dimuons in mass range [9.9, 10.8]")
-            resonance_mask = (dimuons.mass > 9.9) & (dimuons.mass < 10.8)
-        elif self.resonance_mask == "z":
-            print("Selecting only dimuons in mass range [71, 111]")
-            resonance_mask = (dimuons.mass > 71) & (dimuons.mass < 111)
-        elif self.resonance_mask == "all":
-            print("Using OR of dimuon resonances: kshort, eta, rho, jpsi, psi2s, upsilon, z")
-            resonance_mask = (
-                ((dimuons.mass > 0.434) & (dimuons.mass < 0.49)) |
-                ((dimuons.mass > 0.527) & (dimuons.mass < 0.573)) |
-                ((dimuons.mass > 0.748) & (dimuons.mass < 0.812)) |
-                ((dimuons.mass > 3.0) & (dimuons.mass < 3.2)) |
-                ((dimuons.mass > 3.55) & (dimuons.mass < 3.805)) |
-                ((dimuons.mass > 9.9) & (dimuons.mass < 10.8)) |
-                ((dimuons.mass > 71) & (dimuons.mass < 111))
-            )
+            # Fill dummy values for dimuon mass
+            h_mass.fill(mass=ak.ones_like(events["event"])*0.0)
+            h_mass_Z.fill(mass=ak.ones_like(events["event"])*0.0)
+            h_mass_JPsi.fill(mass=ak.ones_like(events["event"])*0.0)
+            h_mass_JPsi_eta.fill(mass=ak.ones_like(events["event"])*0.0, eta=ak.ones_like(events["event"])*0.0)
         else:
-            resonance_mask = ak.ones_like(dimuons.mass, dtype=bool)
+            print(f"\nDimuon selections")
+            events = events[ak.num(events[muon_collection_key]) >= 2]
+            # Sort the muons
+            muons = events[muon_collection_key]
+            muons_pt_order = ak.argsort(muons.pt, axis=1, ascending=False)
+            muons = muons[muons_pt_order]
+            
+            # Apply basic filters on muons (eta and normchi2) and only save events with at least two muons passing selections
+            eta_filter = np.abs(muons.eta) < 2.4
+            normchi2_filter = muons.normchi2 < 3.0
+            muon_filter = eta_filter & normchi2_filter
+            print(f"Applying basic filters on muons")
+            muons = muons[muon_filter]
+            muon_num_filter = ak.num(muons) >= 2 
+            events = events[muon_num_filter]
+            muons = muons[muon_num_filter]
 
-        events = events[resonance_mask]
-        muons_selected = muons_selected[resonance_mask]
-        dimuons = dimuons[resonance_mask]
+            # Make dimuon candidates
+            dimuons = ak.combinations(muons, 2, fields=["muon_i", "muon_j"])
+            dimuons_idx = ak.argcombinations(muons, 2, fields=["muon_i", "muon_j"])
+            muon_i, muon_j = ak.unzip(dimuons)
+            # Dimuon selections
+            dimuon_dr_ij = muon_i.delta_r(muon_j)
+            dr_filter = dimuon_dr_ij > 0.1
+            os_filter = muon_i.charge != muon_j.charge
+            dimuon_filter = dr_filter & os_filter
+            dimuons = dimuons[dimuon_filter]
+            dimuons_idx = dimuons_idx[dimuon_filter]
+            muon_i, muon_j = ak.unzip(dimuons)
+            muon_idx_i, muon_idx_j = ak.unzip(dimuons_idx)
+            # Get the first dimuon candidate and stitch their indices together
+            muon_idx_i_leading = ak.firsts(muon_idx_i)
+            muon_idx_j_leading = ak.firsts(muon_idx_j)
+            muon_idx_isnone = ak.is_none(muon_idx_i_leading)
+            muon_idx_i_leading = muon_idx_i_leading[~muon_idx_isnone]
+            muon_idx_j_leading = muon_idx_j_leading[~muon_idx_isnone]
+            events = events[~muon_idx_isnone]
+            muons = muons[~muon_idx_isnone]
+
+            # Selected muons
+            muons_to_select = ak.concatenate([ak.singletons(muon_idx_i_leading), ak.singletons(muon_idx_j_leading)], axis=1)
+            local_idx = ak.local_index(muons, axis=1)
+            select_mask = ((local_idx == muon_idx_i_leading[:, None]) | (local_idx == muon_idx_j_leading[:, None]))
+            muons_selected = muons[select_mask]
+
+            h_cutflow.fill(cutflow="num_events_selection", cutflow_count=ak.ones_like(events["event"])*0)
+            
+            # Remake the dimuon system and apply a resonance selection if needed
+            dimuons = muons_selected[:, 0] + muons_selected[:, 1]
+            h_mass.fill(mass=dimuons.mass)
+            h_mass_Z.fill(mass=dimuons.mass)
+            h_mass_JPsi.fill(mass=dimuons.mass)
+            h_mass_JPsi_eta.fill(mass=dimuons.mass, eta=dimuons.eta)
+
+            # Apply a resonance selection if required
+            resonance_mask = ak.ones_like(dimuons.mass, dtype=bool)
+            if self.resonance_mask == "kshort":
+                print("Selecting only dimuons in mass range [0.434, 0.49]")
+                resonance_mask = (dimuons.mass > 0.434) & (dimuons.mass < 0.49)
+            elif self.resonance_mask == "eta":
+                print("Selecting only dimuons in mass range [0.527, 0.573]")
+                resonance_mask = (dimuons.mass > 0.527) & (dimuons.mass < 0.573)
+            elif self.resonance_mask == "rho":
+                print("Selecting only dimuons in mass range [0.748, 0.812]")
+                resonance_mask = (dimuons.mass > 0.748) & (dimuons.mass < 0.812)
+            elif self.resonance_mask == "jpsi":
+                print("Selecting only dimuons in mass range [3.0, 3.2]")
+                resonance_mask = (dimuons.mass > 3.0) & (dimuons.mass < 3.2)
+            elif self.resonance_mask == "psi2s":
+                print("Selecting only dimuons in mass range [3.55, 3.805]")
+                resonance_mask = (dimuons.mass > 3.55) & (dimuons.mass < 3.805)
+            elif self.resonance_mask == "upsilon":
+                print("Selecting only dimuons in mass range [9.9, 10.8]")
+                resonance_mask = (dimuons.mass > 9.9) & (dimuons.mass < 10.8)
+            elif self.resonance_mask == "z":
+                print("Selecting only dimuons in mass range [71, 111]")
+                resonance_mask = (dimuons.mass > 71) & (dimuons.mass < 111)
+            elif self.resonance_mask == "all":
+                print("Using OR of dimuon resonances: kshort, eta, rho, jpsi, psi2s, upsilon, z")
+                resonance_mask = (
+                    ((dimuons.mass > 0.434) & (dimuons.mass < 0.49)) |
+                    ((dimuons.mass > 0.527) & (dimuons.mass < 0.573)) |
+                    ((dimuons.mass > 0.748) & (dimuons.mass < 0.812)) |
+                    ((dimuons.mass > 3.0) & (dimuons.mass < 3.2)) |
+                    ((dimuons.mass > 3.55) & (dimuons.mass < 3.805)) |
+                    ((dimuons.mass > 9.9) & (dimuons.mass < 10.8)) |
+                    ((dimuons.mass > 71) & (dimuons.mass < 111))
+                )
+            else:
+                resonance_mask = ak.ones_like(dimuons.mass, dtype=bool)
+
+            events = events[resonance_mask]
+            muons_selected = muons_selected[resonance_mask]
+            dimuons = dimuons[resonance_mask]
 
         # Recompute the dxy and dz using given recipe
         pvs = events["ScoutingPrimaryVertex"][:, 0]
@@ -356,6 +397,7 @@ class MonitoringProcessor(processor.ProcessorABC):
 
 
         # Fill histograms
+        h_nmuon.fill(nmuon=ak.num(events[muon_collection_key].pt))
         h_pt.fill(pt=ak.flatten(muons_selected.pt))
         h_eta.fill(eta=ak.flatten(muons_selected.eta))
         h_phi.fill(phi=ak.flatten(muons_selected.phi))
@@ -413,6 +455,7 @@ class MonitoringProcessor(processor.ProcessorABC):
 
         return {
             "cutflow": h_cutflow,
+            "nmuon": h_nmuon,
             "mass": h_mass,
             "mass_Z": h_mass_Z,
             "mass_JPsi": h_mass_JPsi,
@@ -451,7 +494,7 @@ class MonitoringProcessor(processor.ProcessorABC):
         pass
 
 def main():
-    parser = argparse.ArgumentParser("Dummy script that just returns a histogram with the total number of events in the dataset")
+    parser = argparse.ArgumentParser("Script that plots muons with trigger and quality selections applied (optionally also dimuon info)")
     parser.add_argument("--infile", type=str, nargs="+", help="Input files")
     parser.add_argument("--outfile", type=str, default="output_coffea.root", help="Output file (default: output_coffea.root)")
     parser.add_argument("--redirector", "-r", type=str, help="XRootD redirector (e.g., root://xrootd-cms.infn.it/)")
@@ -460,6 +503,7 @@ def main():
     parser.add_argument("--prescalel1", action="store_true", help="Select only events that pass unprescaled L1 seeds")
     parser.add_argument("--useVtx", action="store_true", help="Use vtx muons")
     parser.add_argument("--resonance_mask", type=str, help="Resonance mask applied to dimuons (eg. jpsi)")
+    parser.add_argument("--no_dimuon", action="store_true", help="Selections do not use dimuons")
     parser.add_argument("--lumi_mask", type=str, help="Path to luminosity mask if exists")
     parser.add_argument("--pre2024", action='store_true', help="2022 and 2023 data use ScoutingMuon collection")
     # Dask related 
@@ -474,6 +518,7 @@ def main():
     prescalel1 = args.prescalel1
     useVtx = args.useVtx
     resonance_mask = args.resonance_mask
+    no_dimuon = args.no_dimuon
     lumi_mask = args.lumi_mask
     dask_condor = args.daskcondor
     dask_cluster = args.daskcluster
@@ -588,12 +633,12 @@ def main():
     print(f"Dask Client: {client}")
 
 
-    processor_instance = MonitoringProcessor(hltpath=hltpath, prescalel1=prescalel1, useVtx=useVtx, resonance_mask=resonance_mask, lumi_mask=lumi_mask)
-    executor = processor.DaskExecutor(client=client, retries=10)
+    processor_instance = MonitoringProcessor(hltpath=hltpath, prescalel1=prescalel1, useVtx=useVtx, resonance_mask=resonance_mask, no_dimuon=no_dimuon, lumi_mask=lumi_mask)
+    executor = processor.DaskExecutor(client=client, retries=3)
     run = processor.Runner(
         executor=executor,
         schema=ScoutingNanoAODSchema,
-        xrootdtimeout=300,
+        xrootdtimeout=60,
         chunksize=500000,
     )
     output = run(

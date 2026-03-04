@@ -65,6 +65,30 @@ class MonitoringProcessor(processor.ProcessorABC):
             storage="weight", 
             label="Counts"
         )
+        trigger_name_axis = hist.axis.StrCategory([], growth=True, name="trigger", label="Trigger")
+        h_trigger = hist.Hist(
+            trigger_name_axis, 
+            hist.axis.Regular(1, 0, 1, name="trigger_count", label="Count"), 
+            storage="weight", 
+            label="Counts"
+        )
+        h_nmuon = hist.Hist(
+            hist.axis.Regular(10, 0, 10, name="nmuon", label="nMuons"),
+            storage="weight"
+        )
+        # Event quantities
+        h_mass = hist.Hist(
+            hist.axis.Regular(15000, 0, 150, name="mass", label="Mass [GeV]"),
+            storage="weight"
+        )
+        h_mass_Z = hist.Hist(
+            hist.axis.Regular(100, 71, 111, name="mass", label="Mass [GeV]"),
+            storage="weight"
+        )
+        h_mass_JPsi = hist.Hist(
+            hist.axis.Regular(75, 2.8, 3.4, name="mass", label="Mass [GeV]"),
+            storage="weight"
+        )
         h_pt = hist.Hist(
             hist.axis.Regular(100, 0, 100, name="pt", label="Pt [GeV]"),
             storage="weight"
@@ -134,6 +158,12 @@ class MonitoringProcessor(processor.ProcessorABC):
             hist.axis.Regular(20, 0, 20, name="trackerLayers", label="Number of tracker layers"),
             storage="weight"
         )
+        # Bin the J/Psi mass in terms of dimuon eta
+        h_mass_JPsi_eta = hist.Hist(
+            hist.axis.Regular(75, 2.8, 3.4, name="mass", label="Mass [GeV]"),
+            hist.axis.Regular(100, -3, 3, name="eta", label="Eta"),
+            storage="weight"
+        )
         # Extra PV and muon position related quantities
         h_vx = hist.Hist(
             hist.axis.Regular(100, -0.5, 0.5, name="vx", label="Muon vx"),
@@ -181,15 +211,21 @@ class MonitoringProcessor(processor.ProcessorABC):
         )
 
         # Starting event count
-        h_cutflow.fill(cutflow="num_events", cutflow_count=ak.ones_like(events["DST"]["PFScouting_DoubleMuonVtx"])*0)
+        h_cutflow.fill(cutflow="num_events", cutflow_count=ak.ones_like(events["event"])*0)
 
         # Luminosity mask
         if self.lumi_mask is not None:
             print("Applying luminosity mask...")
             good_lumi_mask = self.lumi_mask(events.run, events.luminosityBlock)
             events = events[good_lumi_mask]
-        h_cutflow.fill(cutflow="num_events_lumi", cutflow_count=ak.ones_like(events["DST"]["PFScouting_DoubleMuonVtx"])*0)
+        h_cutflow.fill(cutflow="num_events_lumi", cutflow_count=ak.ones_like(events["event"])*0)
 
+        # Apply trigger selections
+        paths = events["DST"].fields 
+        for path in paths:
+            path_mask = events["DST"][path]
+            events_trig = events[path_mask]
+            h_trigger.fill(trigger=f"DST_{path}", trigger_count=ak.ones_like(events_trig["event"])*0)
 
         events = events[ak.num(events[muon_collection_key]) >= 1]
         # Sort the muons
@@ -197,7 +233,7 @@ class MonitoringProcessor(processor.ProcessorABC):
         muons_pt_order = ak.argsort(muons.pt, axis=1, ascending=False)
         muons = muons[muons_pt_order]
 
-        h_cutflow.fill(cutflow="num_events_selection", cutflow_count=ak.ones_like(events["DST"]["PFScouting_DoubleMuonVtx"])*0)
+        h_cutflow.fill(cutflow="num_events_selection", cutflow_count=ak.ones_like(events["event"])*0)
 
         # Recompute the dxy and dz using given recipe
         pvs = events["ScoutingPrimaryVertex"][:, 0]
@@ -214,8 +250,14 @@ class MonitoringProcessor(processor.ProcessorABC):
         trk_dxy_recomputed = ((-trk_dx * trk_py) + (trk_dy * trk_px)) / trk_pt
         trk_dz_recomputed = trk_dz - ((trk_dx * trk_px) + (trk_dy * trk_py)) * (trk_pz / trk_pt2)
 
-
+        # Fill dummy values for dimuon mass
+        h_mass.fill(mass=ak.ones_like(events["event"])*0.0)
+        h_mass_Z.fill(mass=ak.ones_like(events["event"])*0.0)
+        h_mass_JPsi.fill(mass=ak.ones_like(events["event"])*0.0)
+        h_mass_JPsi_eta.fill(mass=ak.ones_like(events["event"])*0.0, eta=ak.ones_like(events["event"])*0.0)
+        
         # Fill histograms
+        h_nmuon.fill(nmuon=ak.num(muons.pt))
         h_pt.fill(pt=ak.flatten(muons.pt))
         h_eta.fill(eta=ak.flatten(muons.eta))
         h_phi.fill(phi=ak.flatten(muons.phi))
@@ -273,6 +315,11 @@ class MonitoringProcessor(processor.ProcessorABC):
 
         return {
             "cutflow": h_cutflow,
+            "trigger": h_trigger,
+            "nmuon": h_nmuon,
+            "mass": h_mass,
+            "mass_Z": h_mass_Z,
+            "mass_JPsi": h_mass_JPsi,
             "pt": h_pt,
             "eta": h_eta,
             "phi": h_phi,
@@ -289,6 +336,7 @@ class MonitoringProcessor(processor.ProcessorABC):
             "trackerLayers": h_trackerLayers,
             "phi_trackerLayers": h_phi_trackerLayers,
             "eta_trackerLayers": h_eta_trackerLayers,
+            "mass_JPsi_eta": h_mass_JPsi_eta,
             "vx": h_vx,
             "vy": h_vy,
             "vz": h_vz,
@@ -307,7 +355,7 @@ class MonitoringProcessor(processor.ProcessorABC):
         pass
 
 def main():
-    parser = argparse.ArgumentParser("Dummy script that just returns a histogram with the total number of events in the dataset")
+    parser = argparse.ArgumentParser("Script that plots muon quantities with no additional selections on muons or trigger")
     parser.add_argument("--infile", type=str, nargs="+", help="Input files")
     parser.add_argument("--outfile", type=str, default="output_coffea.root", help="Output file (default: output_coffea.root)")
     # Processor specific

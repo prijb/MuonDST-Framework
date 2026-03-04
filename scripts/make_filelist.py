@@ -17,7 +17,7 @@ def sort_files(filelist_unsorted):
 """
 Use cases
 Local: python3 scripts/make_filelist.py --input /vols/cms/pb4918/StoreNTuple/Scouting/2022FNanotron --output filelists/filelist_local.txt
-Gfal: python3 scripts/make_filelist.py --input /store/user/ppradeep/Data/EphemeralHLTPhysics0/GRun_16_0_0_V30_baseline_ScoutingNano/260301_020955/000 --prefix root://gfe02.grid.hep.ph.ic.ac.uk/pnfs/hep.ph.ic.ac.uk/data/cms/ --gfal --output filelists/filelist_gfal.txt
+Gfal: python3 scripts/make_filelist.py --input /store/user/ppradeep/Data/EphemeralHLTPhysics0/GRun_16_0_0_V30_baseline_ScoutingNano/260301_020955/0000 --prefix root://gfe02.grid.hep.ph.ic.ac.uk/pnfs/hep.ph.ic.ac.uk/data/cms/ --gfal --output filelists/filelist_gfal.txt
 DAS: python3 scripts/make_filelist.py --input /EphemeralHLTPhysics0/ppradeep-GRun_16_0_0_V30_baseline_ScoutingNano-00000000000000000000000000000000/USERs --das --dasprod prod/phys03 --output filelists/filelist_das.txt
 """
 parser = argparse.ArgumentParser(description="Get filelist from dataset")

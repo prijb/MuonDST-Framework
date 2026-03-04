@@ -13,7 +13,7 @@ parser.add_argument("--input", "-i", type=str, help="Input dataset filelist (tex
 parser.add_argument("--output", "-o", type=str, help="Output directory for results")
 parser.add_argument("--nfiles", "-n", default=-1, type=int, help="Number of files to process (default: -1 for all files)")
 parser.add_argument("--nfiles_per_job", "-nj", default=1, type=int, help="Number of files to process per job (default: 1)")
-parser.add_argument("--redirector", "-r", type=str, help="XRootD redirector (e.g., root://xrootd-cms.infn.it/)")
+parser.add_argument("--redirector", "-r", type=str, help="XRootD redirector (e.g., root://xrootd-cms.infn.it/, root://cms-xrd-global.cern.ch/)")
 parser.add_argument('--script', default="scripts/make_L1DoubleMuonEfficiency.py", type=str, help='Script to run on each file')
 parser.add_argument("--opts", type=str, help="Additional options enclosed in one string")
 args = parser.parse_args()

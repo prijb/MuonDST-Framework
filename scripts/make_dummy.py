@@ -49,7 +49,7 @@ class DummyProcessor(processor.ProcessorABC):
         # Cutflows are also just histograms
         cutflow_axis = hist.axis.StrCategory([], growth=True, name="cutflow", label="Cutflow")
         h_cutflow = hist.Hist(cutflow_axis, hist.axis.Regular(1, 0, 1, name="cutflow_count", label="Count"), storage="weight", label="Counts")
-        h_cutflow.fill(cutflow="num_events", cutflow_count=ak.ones_like(events["DST"]["PFScouting_DoubleMuonVtx"])*0)
+        h_cutflow.fill(cutflow="num_events", cutflow_count=ak.ones_like(events["event"])*0)
 
         return {
             "cutflow": h_cutflow
