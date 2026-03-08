@@ -39,6 +39,21 @@ def plot_ratio_errps(ax, h_num, h_den, color, alpha=0.8):
     ax.errorbar(h_den.axes[0].centers, ratio, yerr=h_num_rel_err, fmt='o', color=color, alpha=alpha, markersize=4)
     return ax
 
+# Find points where the numerator and denominator are unequal (for diagnostics)
+def find_inequality(h_num, h_den):
+    x = h_num.axes[0].centers
+    h_num_values = h_num.values()
+    h_den_values = h_den.values()
+    ratio = h_num_values/h_den_values
+    inequality_mask = (h_num_values != h_den_values)
+    if sum(inequality_mask) > 0:
+        print(f"Inequalities found at {x[inequality_mask]}")
+        print(f"h_num: {h_num_values[inequality_mask]}")
+        print(f"h_den: {h_den_values[inequality_mask]}")
+        print(f"ratio: {ratio[inequality_mask]}")
+
+    return None
+
 # 2D plotting
 def plot_2d_hist(ax, h, cmap="viridis", density=False, logz=False):
     if density:
@@ -58,8 +73,8 @@ def plot_2d_ratio(ax, h_num, h_den, logz=False):
         ax=ax,
         cbarextend=True,
         norm=LogNorm(vmin=0.1, vmax=2) if logz else Normalize(vmin=0.5, vmax=1.5),
-        cmap="viridis",
-        #cmap="bwr"
+        #cmap="viridis",
+        cmap="bwr",
     )
     return ax
 
@@ -70,10 +85,10 @@ parser.add_argument("--labels", type=str, nargs="+", help="Labels for each of th
 parser.add_argument("--lumis", type=float, nargs="*", help="List of luminosities for each file")
 parser.add_argument("--norm", action="store_true", help="Normalize histograms to unit area")
 parser.add_argument("--addtxt", type=str, help="Additional text")
-parser.add_argument("--rlabel", type=str, default="1 \fb (13.6 TeV)$", help="Directory to store plots in")
+parser.add_argument("--rlabel", type=str, default="1 \fb (13.6 TeV)$", help="Label for top left of plot")
 parser.add_argument("--outdir", type=str, default="plots/performance", help="Directory to store plots in")
 args = parser.parse_args()
-colors = ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:purple"]
+colors = ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:purple", "tab:brown"]
 
 cwd = os.getcwd()
 files = args.files
@@ -110,6 +125,7 @@ vars_dict = {
         "text_pos_x": 0.60,
         "text_pos_y": 0.80,
         "ratio_ylim": (0.8, 1.2),
+        "xscale": None,
         "yscale": None,
     },
     "mass_Z": {
@@ -119,6 +135,7 @@ vars_dict = {
         "text_pos_x": 0.60,
         "text_pos_y": 0.80,
         "ratio_ylim": (0.8, 1.2),
+        "xscale": None,
         "yscale": None,
     },
     "pt": {
@@ -128,6 +145,7 @@ vars_dict = {
         "text_pos_x": 0.60,
         "text_pos_y": 0.70,
         "ratio_ylim": (0.8, 1.2),
+        "xscale": None,
         "yscale": "log",
     },
     "eta": {
@@ -137,7 +155,8 @@ vars_dict = {
         "text_pos_x": 0.60,
         "text_pos_y": 0.80,
         "ratio_ylim": (0.8, 1.2),
-        "yscale": None,
+        "xscale": None,
+        "yscale": "log",
     },
     "phi": {
         "hname": "phi",
@@ -146,6 +165,7 @@ vars_dict = {
         "text_pos_x": 0.60,
         "text_pos_y": 0.80,
         "ratio_ylim": (0.8, 1.2),
+        "xscale": None,
         "yscale": None,
     },
     "dxy_recomputed": {
@@ -155,6 +175,7 @@ vars_dict = {
         "text_pos_x": 0.60,
         "text_pos_y": 0.80,
         "ratio_ylim": (0.8, 1.2),
+        "xscale": None,
         "yscale": "log",
     },
     "dxy_recomputed_zoom": {
@@ -164,6 +185,7 @@ vars_dict = {
         "text_pos_x": 0.60,
         "text_pos_y": 0.80,
         "ratio_ylim": (0.8, 1.2),
+        "xscale": None,
         "yscale": "log",
     },
     "dz_recomputed": {
@@ -173,6 +195,7 @@ vars_dict = {
         "text_pos_x": 0.60,
         "text_pos_y": 0.80,
         "ratio_ylim": (0.8, 1.2),
+        "xscale": None,
         "yscale": "log",
     },
     "dz_recomputed_zoom": {
@@ -182,6 +205,7 @@ vars_dict = {
         "text_pos_x": 0.60,
         "text_pos_y": 0.80,
         "ratio_ylim": (0.8, 1.2),
+        "xscale": None,
         "yscale": "log",
     },
     "pv_z": {
@@ -191,6 +215,7 @@ vars_dict = {
         "text_pos_x": 0.60,
         "text_pos_y": 0.80,
         "ratio_ylim": (0.8, 1.2),
+        "xscale": None,
         "yscale": None,
     },
     "vz": {
@@ -200,6 +225,7 @@ vars_dict = {
         "text_pos_x": 0.60,
         "text_pos_y": 0.80,
         "ratio_ylim": (0.8, 1.2),
+        "xscale": None,
         "yscale": None,
     },
     "pixelLayers": {
@@ -209,6 +235,7 @@ vars_dict = {
         "text_pos_x": 0.60,
         "text_pos_y": 0.80,
         "ratio_ylim": (0.8, 1.2),
+        "xscale": None,
         "yscale": "log",
     },
     "trackerLayers": {
@@ -218,10 +245,15 @@ vars_dict = {
         "text_pos_x": 0.05,
         "text_pos_y": 0.60,
         "ratio_ylim": (0.8, 1.2),
+        "xscale": None,
         "yscale": "log",
     },
     
 }
+
+# Removing masses (for plotting files that don't necessarily have dimuons)
+#vars_dict.pop("mass_JPsi", None)
+#vars_dict.pop("mass_Z", None)
 
 # Plot 1D histograms
 for key in vars_dict.keys():
@@ -244,11 +276,17 @@ for key in vars_dict.keys():
             axs[1].stairs(1+h_rel_err, edges=h.axes[0].edges, baseline=1-h_rel_err, **errps)
         else:
             axs[1] = plot_ratio_errps(axs[1], h_num=h, h_den=h_list[0], color=colors[i])
+            # Check the equality of the values between the current and reference histogram
+            #print(f"\nChecking equality of {labels[i]} with respect to {labels[0]}")
+            #find_inequality(h_num=h, h_den=h_list[0])
     axs[0].set_xlabel("")
     axs[0].set_ylabel("Counts")
+    if var_dict['xscale'] is not None:
+        axs[0].set_xscale("log")
+        axs[1].set_xscale("log")
     if var_dict['yscale'] is not None: axs[0].set_yscale("log")
-    axs[0].legend(fontsize=16*1.2, loc=f"{var_dict['legend_loc']}", ncol=1)
-    if addtxt is not None: axs[0].text(var_dict['text_pos_x'], var_dict['text_pos_y'], f"{addtxt}", transform=axs[0].transAxes, fontsize=16)
+    axs[0].legend(fontsize=16, loc=f"{var_dict['legend_loc']}", ncol=2)
+    if addtxt is not None: axs[0].text(var_dict['text_pos_x'], var_dict['text_pos_y'], f"{addtxt}", transform=axs[0].transAxes, fontsize=14)
     axs[1].set_xlabel(f"{var_dict['label']}")
     axs[1].set_ylabel(f"Ratio to {labels[0]}")
     axs[1].set_ylim(*var_dict['ratio_ylim'])
@@ -278,18 +316,21 @@ for layerName in ["pixelLayers", "trackerLayers"]:
             h_list_2d.append(h)
             h = h.profile(1)
             h_list.append(h)
-            h, axs[0] = plot_1d_hist(axs[0], h, f"{labels[i]}", colors[i], density=args.norm, histtype="errorbar")
-        if i == 0:
-            h_values = h.values()
-            h_variances = h.variances()
-            h_rel_err = np.sqrt(h_variances) / h_values  
-            axs[1].stairs(1+h_rel_err, edges=h.axes[0].edges, baseline=1-h_rel_err, **errps)
-        else:
-            axs[1] = plot_ratio_errps(axs[1], h_num=h, h_den=h_list[0], color=colors[i])
+            h, axs[0] = plot_1d_hist(axs[0], h, f"{labels[i]}", colors[i], density=False, histtype="errorbar")
+            if i == 0:
+                h_values = h.values()
+                h_variances = h.variances()
+                h_rel_err = np.sqrt(h_variances) / h_values  
+                axs[1].stairs(1+h_rel_err, edges=h.axes[0].edges, baseline=1-h_rel_err, **errps)
+            else:
+                axs[1] = plot_ratio_errps(axs[1], h_num=h, h_den=h_list[0], color=colors[i])
         axs[0].set_xlabel("")
         axs[0].set_ylabel(r"Avg." + f"{var_dict_layer['label']}")
-        axs[0].legend(fontsize=16*1.2, loc=f"{var_dict_layer['legend_loc']}", ncol=1)
-        if addtxt is not None: axs[0].text(var_dict_layer['text_pos_x'], var_dict_layer['text_pos_y'], f"{addtxt}", transform=axs[0].transAxes, fontsize=16)
+        axs[0].set_ylim(0, None)
+        #axs[0].legend(fontsize=16, loc=f"{var_dict_layer['legend_loc']}", ncol=2)
+        #if addtxt is not None: axs[0].text(var_dict_layer['text_pos_x'], var_dict_layer['text_pos_y'], f"{addtxt}", transform=axs[0].transAxes, fontsize=16)
+        axs[0].legend(fontsize=16, loc=f"lower left", ncol=2)
+        if addtxt is not None: axs[0].text(0.30, 0.60, f"{addtxt}", transform=axs[0].transAxes, fontsize=14)
         axs[1].set_xlabel(f"{var_dict_angle['label']}")
         axs[1].set_ylabel(f"Ratio to {labels[0]}")
         axs[1].set_ylim(*var_dict_layer['ratio_ylim'])

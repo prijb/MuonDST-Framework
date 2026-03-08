@@ -1,4 +1,4 @@
-# Inclusive version of make_2025Performance.py (literally no selections, not even trigger)
+# Inclusive version of make_Performance.py (literally no selections, not even trigger)
 import argparse
 import os
 import sys
@@ -89,8 +89,9 @@ class MonitoringProcessor(processor.ProcessorABC):
             hist.axis.Regular(75, 2.8, 3.4, name="mass", label="Mass [GeV]"),
             storage="weight"
         )
+        # Change back to (100, 0, 100) if you wish
         h_pt = hist.Hist(
-            hist.axis.Regular(100, 0, 100, name="pt", label="Pt [GeV]"),
+            hist.axis.Regular(1000, 0, 1000, name="pt", label="Pt [GeV]"),
             storage="weight"
         )
         h_eta = hist.Hist(

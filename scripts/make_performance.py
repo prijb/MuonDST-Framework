@@ -260,7 +260,7 @@ class MonitoringProcessor(processor.ProcessorABC):
             events = events[l1_mask]
         h_cutflow.fill(cutflow="num_events_l1", cutflow_count=ak.ones_like(events["event"])*0)
 
-        # 
+        # Apply just single muon selections
         if self.no_dimuon:
             print(f"\nSingle muon selections")
             events = events[ak.num(events[muon_collection_key]) >= 1]
@@ -489,7 +489,6 @@ class MonitoringProcessor(processor.ProcessorABC):
             "dz_recomputed_closestpv_zoom": h_dz_recomputed_closestpv_zoom,
         }
 
-
     def postprocess(self, accumulator):
         pass
 
@@ -505,7 +504,7 @@ def main():
     parser.add_argument("--resonance_mask", type=str, help="Resonance mask applied to dimuons (eg. jpsi)")
     parser.add_argument("--no_dimuon", action="store_true", help="Selections do not use dimuons")
     parser.add_argument("--lumi_mask", type=str, help="Path to luminosity mask if exists")
-    parser.add_argument("--pre2024", action='store_true', help="2022 and 2023 data use ScoutingMuon collection")
+    parser.add_argument("--year", type=int, default=2024, help="Data year (for naming Scouting Muon type)")
     # Dask related 
     parser.add_argument("--daskcondor", action="store_true", help="Use dask for processing (Do not use if individual job is on condor)")
     parser.add_argument("--daskcluster", type=str, choices=['lxplus', 'lxic'], default='lxic', help="Cluster type to use for dask (default: lxic)")
